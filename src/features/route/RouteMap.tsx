@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef } from 'react'
 import Map, { Layer, Marker, NavigationControl, Source, type MapRef } from 'react-map-gl/maplibre'
-import { MAP_STYLE } from '../map/mapSetup'
+import { MAP_PIXEL_RATIO, MAP_STYLE, flattenBuildings } from '../map/mapSetup'
 import type { RouteDetails, RouteStop } from '../../domain/route'
 import type { BusLocation } from '../../domain/types'
 import './RouteMap.css'
@@ -50,7 +50,14 @@ export function RouteMap({ route, highlightedStopCode, buses = [], trackedVehicl
   }, [route])
 
   return (
-    <Map ref={mapRef} mapStyle={MAP_STYLE} style={{ position: 'absolute', inset: 0 }} onLoad={fitRoute}>
+    <Map
+      ref={mapRef}
+      mapStyle={MAP_STYLE}
+      pixelRatio={MAP_PIXEL_RATIO}
+      onStyleData={(e) => flattenBuildings(e.target)}
+      style={{ position: 'absolute', inset: 0 }}
+      onLoad={fitRoute}
+    >
       <NavigationControl position="top-right" showCompass={false} />
 
       <Source id="route" type="geojson" data={line}>
