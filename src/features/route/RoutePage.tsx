@@ -10,12 +10,14 @@ export interface RoutePageState {
   fromStopCode?: string
   /** Its details, when the previous page had them */
   fromStop?: Stop
+  /** Set when coming from a line's timetable, so the back link returns there */
+  fromLine?: { code: string; id: string; name: string }
 }
 
 export function RoutePage() {
   const { routeCode = '' } = useParams()
   const navigate = useNavigate()
-  const { route: routeInfo, fromStopCode, fromStop } = (useLocation().state as RoutePageState | null) ?? {}
+  const { route: routeInfo, fromStopCode, fromStop, fromLine } = (useLocation().state as RoutePageState | null) ?? {}
   const { data: route, isValidCode, isPending, isError, refetch } = useRouteDetails(routeCode)
 
   const openStop = (stop: Stop) => navigate(`/stop/${stop.code}`, { state: { stop } })
@@ -26,7 +28,15 @@ export function RoutePage() {
       <title>{`${title} · Athens Bus`}</title>
 
       <header className="route-header">
-        {fromStopCode ? (
+        {fromLine ? (
+          <Link
+            to={`/line/${fromLine.code}`}
+            state={{ lineHint: { id: fromLine.id, name: fromLine.name } }}
+            className="route-back"
+          >
+            <span aria-hidden="true">←</span> {fromLine.id} timetable
+          </Link>
+        ) : fromStopCode ? (
           <Link to={`/stop/${fromStopCode}`} state={{ stop: fromStop }} className="route-back">
             <span aria-hidden="true">←</span> {fromStop?.name ?? 'Back to stop'}
           </Link>
@@ -39,6 +49,15 @@ export function RoutePage() {
           {routeInfo && <span className="line-badge">{routeInfo.lineId}</span>}
           <h1>{routeInfo?.routeName ?? `Route ${routeCode}`}</h1>
         </div>
+        {routeInfo && !fromLine && (
+          <Link
+            to={`/line/${routeInfo.lineCode}`}
+            state={{ lineHint: { id: routeInfo.lineId, name: routeInfo.lineName } }}
+            className="route-timetable-link"
+          >
+            Timetable <span aria-hidden="true">›</span>
+          </Link>
+        )}
       </header>
 
       <div className="route-map">

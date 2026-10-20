@@ -36,14 +36,14 @@ src/
   app/        Providers, router, layout
   domain/     The app's own types (Stop, Arrival, ...)
   data/oasa/  OASA client and adapters that turn raw API data into domain types
-  features/   One folder per feature: nearby, stop, line, map
+  features/   One folder per feature: nearby, stop, line, route, map
 ```
 
 ## Roadmap
 
 - [x] Project setup: map of Athens, routes, data layer
 - [x] **P1:** nearby stops from your location, live arrivals at a stop
-- [ ] **P2:** ~~route shapes on the map~~ (done), line search, timetables
+- [x] **P2:** line search, timetables, route shapes on the map
 - [ ] **P3:** all stops on the map (from GTFS), offline support, favourites
 - [ ] **P4:** live bus positions, phone app (Capacitor)
 

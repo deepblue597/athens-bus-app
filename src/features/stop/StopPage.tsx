@@ -1,6 +1,7 @@
 import { Link, useLocation, useParams } from 'react-router'
-import type { Stop, StopRoute } from '../../domain/types'
-import type { RoutePageState } from '../route/RoutePage'
+import type { Stop } from '../../domain/types'
+import { routeState } from './routeState'
+import { StopLinesSheet } from './StopLinesSheet'
 import { ARRIVALS_REFRESH_MS, useStopArrivals } from './useStopArrivals'
 import './StopPage.css'
 
@@ -24,10 +25,13 @@ export function StopPage() {
       </Link>
 
       <header className="stop-header">
-        <h1>{title}</h1>
-        {stop && (
-          <p className="stop-subtitle">{[stop.nameEn, stop.street, `No. ${stop.displayId}`].filter(Boolean).join(' · ')}</p>
-        )}
+        <div>
+          <h1>{title}</h1>
+          {stop && (
+            <p className="stop-subtitle">{[stop.nameEn, stop.street, `No. ${stop.displayId}`].filter(Boolean).join(' · ')}</p>
+          )}
+        </div>
+        {routes && routes.length > 0 && <StopLinesSheet routes={routes} stopCode={stopCode} stop={stop} />}
       </header>
 
       <div className="arrivals-toolbar">
@@ -86,56 +90,10 @@ export function StopPage() {
           </li>
         ))}
       </ul>
-
-      {routes && routes.length > 0 && (
-        <section className="stop-lines" aria-labelledby="stop-lines-heading">
-          <h2 id="stop-lines-heading">Lines at this stop</h2>
-          <ul className="stop-line-list">
-            {distinctLines(routes).map((r) => (
-              <li key={r.routeCode}>
-                <Link
-                  to={`/route/${r.routeCode}`}
-                  state={routeState(r, stopCode, stop)}
-                  className="stop-line"
-                  aria-label={`Line ${r.lineId}, ${r.routeName}. Show route on map`}
-                >
-                  <span className="line-badge">{r.lineId}</span>
-                  <span className="stop-line-route">{r.routeName}</span>
-                  <span className="stop-line-arrow" aria-hidden="true">
-                    ›
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
     </section>
   )
 }
 
-/**
- * Some lines have several variants of the same direction with identical names (e.g. 227 at Omonoia);
- * list each line and direction once. Arrivals still link to the exact variant a bus is driving.
- */
-function distinctLines(routes: StopRoute[]): StopRoute[] {
-  const seen = new Set<string>()
-  return [...routes]
-    .sort((a, b) => a.lineId.localeCompare(b.lineId, 'el', { numeric: true }))
-    .filter((r) => {
-      const key = `${r.lineId}|${r.routeName}`
-      if (seen.has(key)) {
-        return false
-      }
-      seen.add(key)
-      return true
-    })
-}
-
 function minutesLabel(minutes: number) {
   return minutes <= 0 ? 'Now' : `${minutes} min`
-}
-
-function routeState(route: StopRoute | null, stopCode: string, stop: Stop | undefined): RoutePageState {
-  return { route: route ?? undefined, fromStopCode: stopCode, fromStop: stop }
 }

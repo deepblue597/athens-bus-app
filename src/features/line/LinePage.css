@@ -1,0 +1,172 @@
+.line-page {
+  flex: 1;
+  overflow-y: auto;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 12px 16px 24px;
+}
+
+.line-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  margin: -4px 0;
+  color: var(--color-brand-text);
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+
+.line-back:hover {
+  text-decoration: underline;
+}
+
+.line-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 4px 0 16px;
+}
+
+.line-header .line-badge {
+  margin-top: 2px;
+  font-size: 1.125rem;
+}
+
+.line-header h1 {
+  margin: 0;
+  font-size: 1.25rem;
+  line-height: 1.3;
+}
+
+.line-subtitle {
+  margin: 2px 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.line-message {
+  color: var(--color-text-muted);
+}
+
+/* Row of pill-shaped radio buttons (day, direction) */
+.segmented {
+  min-inline-size: 0;
+  margin: 0 0 10px;
+  padding: 0;
+  border: none;
+}
+
+.segmented-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.segmented label {
+  position: relative;
+  display: flex;
+}
+
+/* The real radio covers the pill, so taps and screen reader touch exploration hit it directly */
+.segmented input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.segmented span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 6px 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+.segmented input:hover + span {
+  background: var(--color-hover);
+}
+
+.segmented input:checked + span {
+  border-color: var(--color-brand);
+  background: var(--color-brand);
+  color: var(--color-on-brand);
+  font-weight: 600;
+}
+
+.segmented input:focus-visible + span {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.line-route-link {
+  display: inline-block;
+  padding: 12px 0;
+  color: var(--color-brand-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.line-route-link:hover {
+  text-decoration: underline;
+}
+
+.line-summary {
+  margin: 4px 0 12px;
+  color: var(--color-text-muted);
+}
+
+.line-summary strong {
+  color: var(--color-text);
+}
+
+.line-other-days {
+  margin: -4px 0 12px;
+  color: var(--color-text-muted);
+}
+
+.timetable-earlier {
+  margin-bottom: 12px;
+  font-size: 0.875rem;
+}
+
+.timetable {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.timetable-time {
+  padding: 6px 0;
+  border-radius: 6px;
+  background: var(--color-hover);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.timetable-time--past {
+  color: var(--color-text-muted);
+  background: none;
+  text-decoration: line-through;
+  text-decoration-color: var(--color-border-strong);
+}
+
+.timetable-time--next {
+  background: var(--color-brand);
+  color: var(--color-on-brand);
+  font-weight: 700;
+}

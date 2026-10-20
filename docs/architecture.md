@@ -65,6 +65,22 @@ database and never writes data.
 - Circular routes list their first stop again at the end, so a stop code is not unique within a route.
 - The library does not URL-encode parameters, so the app only passes numeric codes (`isOasaCode`).
 - Typical latency is 0.1–0.3 s; the client times out after 5 s and retries once.
+
+### Timetables
+
+- Each timetable row is one bus doing up to two legs (`*1` from the first terminal, `*2` back from the
+  other). A row is in `go` when its leg 1 runs on this line and in `come` when its leg 2 does, so
+  departures from the first terminal are `go[].sde_start1` and from the other terminal
+  `come[].sde_start2`. The other leg of a row can belong to another line (buses alternate between
+  217 and 229), so it must not be read. Checked against 47 lines.
+- `go` corresponds to the RouteType `1` route and `come` to RouteType `2`, except on single-route
+  lines (circular lines, part-route variants); `timetableSides()` pairs them.
+- `getDailySchedule` is today's actual plan and is the "Today" tab; it can be empty for lines that
+  only run on some days (e.g. 703 on Saturday nights). `getSchedLines` ignores its first parameter.
+- After-midnight trips are dated `1900-01-02`; some lines run past 05:00, so early in the morning
+  the previous day's late trips can still be the next departure.
+- `LineID` (the number on the bus) is not unique: part-route variants share it (`mld_master` = `0`),
+  so URLs use `LineCode`.
 - About 94% of stop codes seen in the API exist in the GTFS feed; the rest need an API fallback.
 - Timetable times look like `1900-01-01 05:10:00`. Trips after midnight use `1900-01-02`.
 - In a timetable entry, the `*1` fields describe the outbound trip and the `*2` fields the return trip.
