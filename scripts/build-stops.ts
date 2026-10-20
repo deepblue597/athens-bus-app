@@ -53,7 +53,16 @@ async function request<T>(query: string): Promise<T[]> {
       lastError = err
     }
   }
-  throw new Error(`${query}: ${lastError instanceof Error ? lastError.message : String(lastError)}`)
+  throw new Error(`${query}: ${describeError(lastError)}`)
+}
+
+/** "fetch failed" alone says nothing; the network error behind it is in `cause` (ECONNRESET, ETIMEDOUT...) */
+function describeError(err: unknown): string {
+  if (!(err instanceof Error)) {
+    return String(err)
+  }
+  const cause = err.cause as { code?: string; message?: string } | undefined
+  return cause ? `${err.message} (${cause.code ?? cause.message ?? 'unknown cause'})` : err.message
 }
 
 /** Runs `fn` over `items` with at most `limit` in flight, keeping the order of `items` */
