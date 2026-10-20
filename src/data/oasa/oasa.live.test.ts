@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { APIRequests, type RequestFunction } from 'oasa-telematics-api'
 import { ATHENS_CENTER } from '../../domain/geo'
 import { asList, OasaApiError, toArrivals, toNearbyStops, toStopRoutes, withRoutes } from './adapters'
+import { toLineDirections, toLines, toScheduleDays, toTimetable } from './lineAdapters'
 
 const live = Boolean(import.meta.env.OASA_LIVE)
 
@@ -65,6 +66,27 @@ describe.skipIf(!live)('OASA live API', { timeout: 60_000 }, () => {
     const raw = await api.getBusLocation('99999999')
     expect(raw).toBe('')
     expect(asList(raw)).toEqual([])
+  })
+
+  it('splits timetables by leg: go rows start on this line, come rows return on it', async () => {
+    // toTimetable reads only go[].sde_start1 and come[].sde_start2; this checks why that is safe.
+    // 040 (two-way, 24h), 217 (shares buses with 229), 300 (circular), 500 (night only)
+    const lines = toLines(await api.webGetLinesWithMLInfo()).filter((l) => ['938', '1033', '885', '877'].includes(l.code))
+    expect(lines).toHaveLength(4)
+    for (const line of lines) {
+      const days = toScheduleDays(await api.getScheduleDaysMasterline(line.code))
+      expect(days.length, line.id).toBeGreaterThan(0)
+      const raw = (await api.getSchedLines(line.masterCode, days[0].code, line.code)) as unknown as {
+        go: { sde_line1: string | null; sde_start1: string | null }[]
+        come: { sde_line2: string | null; sde_start2: string | null }[]
+      }
+      for (const row of raw.go) expect(row.sde_line1, `${line.id} go`).toBe(line.code)
+      for (const row of raw.come) expect(row.sde_line2, `${line.id} come`).toBe(line.code)
+      const timetable = toTimetable(raw as never)
+      expect(timetable.outbound.length, line.id).toBeGreaterThan(0)
+      const directions = toLineDirections(await api.webGetRoutes(line.code))
+      expect(directions.map((d) => d.type), line.id).toEqual(timetable.inbound.length > 0 ? ['1', '2'] : ['1'])
+    }
   })
 
   it('reports bad parameters as {"error": ...} with status 200', async () => {

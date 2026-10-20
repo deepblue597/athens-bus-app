@@ -7,7 +7,9 @@
 .layout-header {
   display: flex;
   align-items: center;
-  padding: 12px 16px;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 8px 4px 16px;
   background: var(--color-brand);
   color: var(--color-on-brand);
 }
@@ -19,7 +21,35 @@
   text-decoration: none;
 }
 
-.layout-title:focus-visible {
+.layout-nav {
+  display: flex;
+  gap: 4px;
+}
+
+.layout-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 8px;
+  color: inherit;
+  font-weight: 500;
+  text-decoration: none;
+  opacity: 0.85;
+}
+
+.layout-nav a:hover {
+  opacity: 1;
+}
+
+.layout-nav a.active {
+  background: rgba(255, 255, 255, 0.18);
+  font-weight: 700;
+  opacity: 1;
+}
+
+.layout-title:focus-visible,
+.layout-nav a:focus-visible {
   outline-color: var(--color-on-brand);
 }
 

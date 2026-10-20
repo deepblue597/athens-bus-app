@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router'
 import { Layout } from './Layout'
 import { NearbyPage } from '../features/nearby/NearbyPage'
 import { StopPage } from '../features/stop/StopPage'
+import { LinesPage } from '../features/line/LinesPage'
 import { LinePage } from '../features/line/LinePage'
 import { RoutePage } from '../features/route/RoutePage'
 
@@ -12,7 +13,9 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <NearbyPage /> },
       { path: 'stop/:stopCode', element: <StopPage /> },
-      { path: 'line/:lineId', element: <LinePage /> },
+      { path: 'lines', element: <LinesPage /> },
+      // LineCode, not the line number: several variants share a number (e.g. three lines are "Α7")
+      { path: 'line/:lineCode', element: <LinePage /> },
       { path: 'route/:routeCode', element: <RoutePage /> },
     ],
   },

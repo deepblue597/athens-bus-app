@@ -1,0 +1,175 @@
+.stop-lines-button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 8px 6px 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.stop-lines-button:hover {
+  background: var(--color-hover);
+}
+
+.stop-lines-count {
+  min-width: 24px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--color-brand);
+  color: var(--color-on-brand);
+  font-size: 0.8125rem;
+  line-height: 24px;
+  text-align: center;
+}
+
+/* Bottom sheet on phones, centred dialog on larger screens */
+.sheet {
+  width: 100%;
+  max-width: 100%;
+  max-height: 80dvh;
+  margin: auto 0 0;
+  padding: 0;
+  border: none;
+  border-radius: 16px 16px 0 0;
+  /* Surface, not page background, so the sheet stands out from the dimmed page in dark mode */
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.25);
+}
+
+.sheet::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.sheet-content {
+  display: flex;
+  flex-direction: column;
+  max-height: 80dvh;
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 6px 6px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sheet-header h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.sheet-close {
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: 1.75rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sheet-close:hover {
+  background: var(--color-hover);
+}
+
+.sheet-list {
+  margin: 0;
+  padding: 0 0 max(16px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+  /* Scrolling past the end must not scroll the page behind the sheet */
+  overscroll-behavior: contain;
+  list-style: none;
+}
+
+.sheet-line {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sheet-line-route {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  min-height: 52px;
+  padding: 8px 8px 8px 16px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.sheet-line-route:hover,
+.sheet-line-timetable:hover {
+  background: var(--color-hover);
+}
+
+.sheet-line-route:focus-visible,
+.sheet-line-timetable:focus-visible {
+  outline-offset: -2px;
+}
+
+.sheet-line-name {
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+.sheet-line-timetable {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  align-self: stretch;
+  padding: 0 16px;
+  color: var(--color-brand-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+@media (min-width: 768px) {
+  .sheet {
+    max-width: 480px;
+    margin: auto;
+    border-radius: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sheet[open] {
+    animation: sheet-up 0.2s ease-out;
+  }
+
+  .sheet[open]::backdrop {
+    animation: sheet-fade 0.2s ease-out;
+  }
+
+  @media (min-width: 768px) {
+    .sheet[open] {
+      animation-name: sheet-fade;
+    }
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes sheet-fade {
+  from {
+    opacity: 0;
+  }
+}
