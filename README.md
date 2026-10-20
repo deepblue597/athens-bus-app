@@ -57,6 +57,23 @@ connections from Greece; Cloudflare runs the function in Athens for users there.
 - `public/_headers` caches the hashed files in `/assets/` for a year.
 - Try the production setup locally: `npm run build && npx wrangler dev`.
 
+## Android app
+
+The same app wrapped with [Capacitor](https://capacitorjs.com) (`capacitor.config.ts`, native project in
+`android/`). Inside the app, OASA is called directly through Android's HTTP stack (no proxy, no CORS
+limits, and the requests come from the phone), there is no service worker (the files are in the app),
+and the stops file ships with the app.
+
+Requirements: Android Studio (for the Android SDK, in `~/Android/Sdk`) and JDK 21.
+
+```sh
+npm run build:android                # web build without the service worker, copied into android/
+cd android && ./gradlew assembleDebug # APK in android/app/build/outputs/apk/debug/
+adb install -r app/build/outputs/apk/debug/app-debug.apk   # phone connected with USB debugging
+```
+
+Or open `android/` in Android Studio and press Run.
+
 ## Roadmap
 
 - [x] Project setup: map of Athens, routes, data layer

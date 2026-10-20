@@ -12,9 +12,12 @@
     "test:watch": "vitest",
     "test:live": "OASA_LIVE=1 vitest run oasa.live",
     "preview": "vite preview",
-    "build:stops": "node scripts/build-stops.ts"
+    "build:stops": "node scripts/build-stops.ts",
+    "build:android": "tsc -b && vite build --mode android && cap sync android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
     "@tanstack/react-query": "^5.104.5",
     "@tanstack/react-query-persist-client": "^5.104.5",
     "maplibre-gl": "^6.15.0",
@@ -25,6 +28,7 @@
     "react-router": "^8.5.0"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.3",
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

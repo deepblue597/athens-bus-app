@@ -14,12 +14,14 @@ const oasaProxy = {
 const DAY_SECONDS = 24 * 60 * 60
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     // Installable app with an offline shell. The service worker doesn't touch /oasa: live data is
     // never cached, and timetables/routes are kept by TanStack Query's persister (app/queryClient.ts).
     VitePWA({
+      // The Android app (vite build --mode android) has its files on the phone already
+      disable: mode === 'android',
       registerType: 'autoUpdate',
       // globPatterns below already precaches every icon; listing them again would add duplicates
       includeManifestIcons: false,
@@ -81,4 +83,4 @@ export default defineConfig({
   ],
   server: { proxy: oasaProxy },
   preview: { proxy: oasaProxy },
-})
+}))

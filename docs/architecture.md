@@ -15,6 +15,7 @@ This document records the main decisions for the app and the reasons behind them
 | 7 | Keep the proxy thin: forward only the GET calls the app makes (an allowlist), with short edge caching per call (5 s for live data, up to 1 h for routes). | It exists because of CORS (decision 2). The allowlist stops it being an open proxy, and the cache means many people watching one stop cost OASA one request every few seconds. |
 | 8 | No accounts. Favourites are stored on the device. | Keeps the app simple and private. |
 | 9 | Offline: the service worker caches the app, map tiles and the stops file; TanStack Query saves lines, routes and timetables in localStorage (refetched after 12 h and 1 h); live data (arrivals, nearby stops) is never saved. | The app opens and shows what you looked at before without a connection, while anything shown as live really is live. |
+| 10 | Android app with Capacitor: the same build (`--mode android`, no service worker) in a native WebView; OASA calls go through Capacitor's native HTTP. | One codebase. Native HTTP has no CORS limits and runs from the phone, so the app doesn't depend on the proxy or on Cloudflare reaching OASA. |
 
 ## Keeping data current
 
