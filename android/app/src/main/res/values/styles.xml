@@ -16,7 +16,11 @@
     </style>
 
 
+    <!-- Launch screen: the bus icon on the app's blue (Android 12+ splash screen API), with the same
+         design as a full image (drawable*/splash.png) for older versions -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="android:background">@drawable/splash</item>
+        <item name="windowSplashScreenBackground">@color/ic_launcher_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
     </style>
 </resources>
