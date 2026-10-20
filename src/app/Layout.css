@@ -19,6 +19,10 @@
   text-decoration: none;
 }
 
+.layout-title:focus-visible {
+  outline-color: var(--color-on-brand);
+}
+
 .layout-main {
   flex: 1;
   min-height: 0;

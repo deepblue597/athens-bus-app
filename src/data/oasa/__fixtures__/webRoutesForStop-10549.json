@@ -1,0 +1,80 @@
+[
+  {
+    "RouteCode": "3766",
+    "LineCode": "1083",
+    "hidden": "0",
+    "RouteDescr": "Ν. ΦΑΛΗΡΟ - ΚΑΣΤΕΛΛΑ - ΔΡΑΠΕΤΣΩΝΑ",
+    "RouteDescrEng": "N. FALIRO - KASTELLA - DRAPETSONA",
+    "RouteType": "1",
+    "RouteDistance": "7415.45",
+    "LineID": "20",
+    "LineDescr": "Ν. ΦΑΛΗΡΟ - ΚΑΣΤΕΛΛΑ - ΔΡΑΠΕΤΣΩΝΑ",
+    "LineDescrEng": "N. FALIRO - KASTELLA - DRAPETSONA",
+    "MasterLineCode": "186"
+  },
+  {
+    "RouteCode": "3325",
+    "LineCode": "1344",
+    "hidden": "1",
+    "RouteDescr": "*** Ν.ΦΑΛΗΡΟ - ΛΙΜΑΝΙ -Ν.ΦΑΛΗΡΟ",
+    "RouteDescrEng": "N.FALIRO - LIMANI - N.FALIRO",
+    "RouteType": "1",
+    "RouteDistance": "8615.42",
+    "LineID": "20*",
+    "LineDescr": "Ν.ΦΑΛΗΡΟ - ΛΙΜΑΝΙ - Ν.ΦΑΛΗΡΟ",
+    "LineDescrEng": "N.FALIRO -LIMANI -N.FALIRO",
+    "MasterLineCode": "186"
+  },
+  {
+    "RouteCode": "3326",
+    "LineCode": "1345",
+    "hidden": "1",
+    "RouteDescr": "*** Ν.ΦΑΛΗΡΟ - ΨΑΡΩΝ -Ν.ΦΑΛΗΡΟ",
+    "RouteDescrEng": "N.FALIRO - PSARON - N.FALIRO",
+    "RouteType": "1",
+    "RouteDistance": "11089.96",
+    "LineID": "20*",
+    "LineDescr": "Ν.ΦΑΛΗΡΟ - ΨΑΡΩΝ - Ν.ΦΑΛΗΡΟ",
+    "LineDescrEng": "N.FALIRO - PSARON - N.FALIRO",
+    "MasterLineCode": "186"
+  },
+  {
+    "RouteCode": "3328",
+    "LineCode": "1346",
+    "hidden": "1",
+    "RouteDescr": "*** Ν.ΦΑΛΗΡΟ -ΠΛ.ΤΕΡΨΙΘΕΑΣ - Ν.ΦΑΛΗΡΟ",
+    "RouteDescrEng": "N.FALIRO - PL.TERPSITHEAS - N.FALIRO",
+    "RouteType": "1",
+    "RouteDistance": "6923.23",
+    "LineID": "20*",
+    "LineDescr": "Ν.ΦΑΛΗΡΟ - ΠΛ.ΤΕΡΨΙΘΕΑΣ - Ν.ΦΑΛΗΡΟ",
+    "LineDescrEng": "N.FALIRO - PL.TERPSHITHEAS",
+    "MasterLineCode": "186"
+  },
+  {
+    "RouteCode": "3331",
+    "LineCode": "1349",
+    "hidden": "1",
+    "RouteDescr": "*** ΔΡΑΠΕΤΣΩΝΑ - ΠΑΣΑΛΙΜΑΝΙ - ΔΡΑΠΕΤΣΩΝΑ",
+    "RouteDescrEng": "DRAPETSONA - PASALIMANI - DRAPETSONA",
+    "RouteType": "1",
+    "RouteDistance": "8294.23",
+    "LineID": "20*",
+    "LineDescr": "ΔΡΑΠΕΤΣΩΝΑ - ΠΑΣΑΛΙΜΑΝΙ - ΔΡΑΠΕΤΣΩΝΑ",
+    "LineDescrEng": "DRAPETSONA - PASALIMANI - DRAPETSONA",
+    "MasterLineCode": "186"
+  },
+  {
+    "RouteCode": "5796",
+    "LineCode": "1351",
+    "hidden": "1",
+    "RouteDescr": "*** ΠΕΙΡΑΙΑΣ - ΑΓ.ΓΕΩΡΓΙΟΣ",
+    "RouteDescrEng": "PEIRAIAS - AG. GEORGIOS",
+    "RouteType": "1",
+    "RouteDistance": "10950.25",
+    "LineID": "17*",
+    "LineDescr": "ΠΕΙΡΑΙΑΣ - ΑΓ.ΓΕΩΡΓΙΟΣ ",
+    "LineDescrEng": "PEIRAIAS - AG. GEORGIOS ",
+    "MasterLineCode": "185"
+  }
+]

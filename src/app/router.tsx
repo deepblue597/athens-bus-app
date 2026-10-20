@@ -3,6 +3,7 @@ import { Layout } from './Layout'
 import { NearbyPage } from '../features/nearby/NearbyPage'
 import { StopPage } from '../features/stop/StopPage'
 import { LinePage } from '../features/line/LinePage'
+import { RoutePage } from '../features/route/RoutePage'
 
 // The URL holds what is on screen, so links can be shared and the back button works
 export const router = createBrowserRouter([
@@ -12,6 +13,7 @@ export const router = createBrowserRouter([
       { index: true, element: <NearbyPage /> },
       { path: 'stop/:stopCode', element: <StopPage /> },
       { path: 'line/:lineId', element: <LinePage /> },
+      { path: 'route/:routeCode', element: <RoutePage /> },
     ],
   },
 ])
