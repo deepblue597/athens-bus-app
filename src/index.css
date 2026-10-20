@@ -10,6 +10,11 @@
   --color-border-strong: #8a8f98;
   --color-hover: #f3f6fb;
   --color-focus: #1565c0;
+  /* Dark enough for 3:1 against the surface (WCAG 1.4.11); a brighter gold is used in dark mode */
+  --color-favourite: #a86500;
+  --color-favourite-bg: #fff4d6;
+  --color-warning-bg: #fff3cd;
+  --color-warning-text: #5c4400;
 
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;
@@ -31,6 +36,10 @@
     --color-border-strong: #6b7079;
     --color-hover: #1d2733;
     --color-focus: #90caf9;
+    --color-favourite: #f5b400;
+    --color-favourite-bg: #3a3320;
+    --color-warning-bg: #3d3200;
+    --color-warning-text: #ffe08a;
   }
 }
 

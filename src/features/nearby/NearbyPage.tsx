@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { StopsMap } from '../map/StopsMap'
+import { useAllStops } from '../map/useAllStops'
+import { useFavourites } from '../favourites/useFavourites'
 import { ATHENS_CENTER, distanceInMeters, formatDistance, type LatLng } from '../../domain/geo'
 import type { Stop } from '../../domain/types'
 import { useUserLocation } from './useUserLocation'
@@ -19,7 +21,9 @@ export function NearbyPage() {
   const userPoint = location.status === 'found' ? location.position : null
   const searchPoint = manualPoint ?? userPoint ?? (location.status === 'locating' ? null : ATHENS_CENTER)
   const nearby = useNearbyStops(searchPoint)
-  const stops = nearby.data ?? []
+  const stops = nearby.data?.stops ?? []
+  const allStops = useAllStops()
+  const { favourites } = useFavourites()
 
   const canSearchArea =
     mapCenter !== null && searchPoint !== null && distanceInMeters(mapCenter, searchPoint) > SEARCH_AREA_MIN_METERS
@@ -40,6 +44,31 @@ export function NearbyPage() {
         <h1 id="nearby-heading" className="visually-hidden">
           Nearby stops
         </h1>
+
+        {favourites.length > 0 && (
+          <section aria-labelledby="favourites-heading">
+            <h2 id="favourites-heading" className="nearby-section-title">
+              Favourites
+            </h2>
+            <ul className="stop-list">
+              {favourites.map((stop) => (
+                <li key={stop.code}>
+                  <button type="button" className="stop-list-item" onClick={() => openStop({ ...stop, street: null })}>
+                    <span className="stop-list-name">
+                      {stop.name}
+                      {stop.nameEn && <span className="stop-list-name-en">{stop.nameEn}</span>}
+                    </span>
+                    {userPoint && (
+                      <span className="stop-list-distance">{formatDistance(distanceInMeters(userPoint, stop))}</span>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+        {/* The location status belongs to the nearby list, so it comes after the favourites */}
+        {favourites.length > 0 && <h2 className="nearby-section-title">Nearby</h2>}
         <div className="nearby-status">
           <p aria-live="polite">{statusText(location.status, manualPoint !== null)}</p>
           {(manualPoint !== null || location.status !== 'found') && location.status !== 'locating' && (
@@ -50,6 +79,9 @@ export function NearbyPage() {
         </div>
 
         <div aria-live="polite">
+          {nearby.data?.fromFile && (
+            <p className="nearby-message">Live data is unavailable, so these stops come from the saved stop list.</p>
+          )}
           {nearby.isError && (
             <p className="nearby-message">
               Couldn’t load stops.{' '}
@@ -84,6 +116,7 @@ export function NearbyPage() {
           focus={searchPoint}
           userLocation={userPoint}
           stops={stops}
+          allStops={allStops.data}
           onSelectStop={openStop}
           onMoveEnd={setMapCenter}
         />

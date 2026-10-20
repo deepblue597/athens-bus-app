@@ -42,6 +42,28 @@ export function LinePage() {
   const hiddenPast = showPast ? 0 : earlier
   const backTo = state?.linesQuery ? `/lines?${new URLSearchParams({ q: state.linesQuery })}` : '/lines'
 
+  // Without the line list there is no timetable to load (offline, or OASA is down)
+  if (!line && (lines.isError || lines.isPaused)) {
+    return (
+      <section className="line-page">
+        <title>{`${header ? `${header.id} ${header.name}` : 'Line'} · Athens Bus`}</title>
+        <BackLink to={backTo} />
+        <p className="line-message">
+          {lines.isPaused ? (
+            'This line isn’t saved on this device. It will load when you’re back online.'
+          ) : (
+            <>
+              Couldn’t load the line.{' '}
+              <button type="button" className="link-button" onClick={() => lines.refetch()}>
+                Try again
+              </button>
+            </>
+          )}
+        </p>
+      </section>
+    )
+  }
+
   if (lines.isSuccess && !line) {
     return (
       <section className="line-page">
@@ -115,7 +137,10 @@ export function LinePage() {
       {/* Only the status is live: the "in N min" countdown would otherwise be read out every minute */}
       <p className="line-summary">
         <span aria-live="polite">
-          {timetable.isPending && 'Loading timetable…'}
+          {timetable.isPending &&
+            (timetable.isPaused
+              ? 'This timetable isn’t saved on this device. It will load when you’re back online.'
+              : 'Loading timetable…')}
           {timetable.isError && (
             <>
               Couldn’t load the timetable.{' '}

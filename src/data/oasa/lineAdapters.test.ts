@@ -19,6 +19,12 @@ describe('toLines', () => {
       ['1663', true, null],
     ])
   })
+
+  it('trims line numbers', () => {
+    // Line 14 is "14 " in webGetLinesWithMLInfo, webGetLines and webRoutesForStop (2026-10-20)
+    const raw = [{ ml_code: '20', sdc_code: '54', line_code: '1078', line_id: '14 ', line_descr: 'ΛΑΜΠΡΙΝΗ - Λ. ΑΛΕΞΑΝΔΡΑΣ - ΓΗΡΟΚΟΜΕΙΟ', line_descr_eng: '', mld_master: '1' }]
+    expect(toLines(raw)[0].id).toBe('14')
+  })
 })
 
 describe('toLineDirections', () => {

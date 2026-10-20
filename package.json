@@ -11,10 +11,12 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:live": "OASA_LIVE=1 vitest run oasa.live",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:stops": "node scripts/build-stops.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.104.5",
+    "@tanstack/react-query-persist-client": "^5.104.5",
     "maplibre-gl": "^6.15.0",
     "oasa-telematics-api": "github:deepblue597/oasa-telematics-api#0a64385f197a1785d05c3d66029b649608daef40",
     "react": "^19.3.1",
@@ -27,9 +29,11 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "happy-dom": "^21.0.3",
     "oxlint": "^1.88.0",
     "typescript": "~7.0.2",
     "vite": "^8.3.4",
+    "vite-plugin-pwa": "^2.0.0",
     "vitest": "^5.0.5"
   },
   "engines": {

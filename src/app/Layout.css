@@ -9,7 +9,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 4px 8px 4px 16px;
+  /* Clear the notch and rounded corners when installed (viewport-fit=cover in index.html) */
+  padding: calc(4px + env(safe-area-inset-top)) calc(8px + env(safe-area-inset-right)) 4px
+    calc(16px + env(safe-area-inset-left));
   background: var(--color-brand);
   color: var(--color-on-brand);
 }
@@ -53,8 +55,18 @@
   outline-color: var(--color-on-brand);
 }
 
+.offline-banner {
+  margin: 0;
+  padding: 8px calc(16px + env(safe-area-inset-right)) 8px calc(16px + env(safe-area-inset-left));
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  font-size: 0.875rem;
+}
+
 .layout-main {
   flex: 1;
+  padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   min-height: 0;
   display: flex;
   flex-direction: column;

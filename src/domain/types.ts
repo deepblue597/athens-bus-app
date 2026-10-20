@@ -12,6 +12,12 @@ export interface Stop {
   lng: number
 }
 
+/** A stop from the nightly stops file (public/data/stops.json) */
+export interface MapStop extends Stop {
+  /** Line numbers serving the stop, e.g. ["040", "Β1"] */
+  lines: string[]
+}
+
 export interface NearbyStop extends Stop {
   /** Distance from the requested point, in metres */
   distanceMeters: number

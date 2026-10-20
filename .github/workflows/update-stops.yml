@@ -1,0 +1,53 @@
+name: Update stops
+
+# Rebuilds public/data/stops.json from the live OASA API so new stops and temporary routes
+# appear within a day. Commits only when the data changed; the push triggers a redeploy through
+# Cloudflare Pages' Git integration. Pushes made with GITHUB_TOKEN don't start other workflows, so
+# this can't loop (and a deploy done by a GitHub Actions workflow would need a PAT here instead).
+on:
+  schedule:
+    - cron: '15 1 * * *' # 03:15/04:15 Athens time, when few buses run
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Replace the file even if it lost more than 10% of its stops or line-stop links
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-stops
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      # The script only uses Node built-ins, so no npm install is needed
+      - run: node scripts/build-stops.ts
+        env:
+          STOPS_FORCE: ${{ inputs.force && '1' || '' }}
+      - name: Commit if the stops changed
+        run: |
+          # --porcelain also sees the file when it isn't tracked yet
+          if [ -z "$(git status --porcelain -- public/data/stops.json)" ]; then
+            echo "Stops unchanged"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data/stops.json
+          git commit -m "Update stops from the OASA API"
+          # Someone may have pushed while the crawl ran: replay this commit on top and retry
+          for attempt in 1 2 3; do
+            git pull --rebase --quiet && git push && exit 0
+            sleep $((attempt * 10))
+          done
+          exit 1

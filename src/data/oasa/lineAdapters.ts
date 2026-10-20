@@ -6,7 +6,8 @@ import { asList, OasaApiError, parseScheduleTime } from './adapters'
 export function toLines(raw: ILineWithMLInfo[] | null): Line[] {
   return asList(raw).map((l) => ({
     code: l.line_code,
-    id: l.line_id,
+    // Trimmed: line 14 comes as "14 "
+    id: l.line_id.trim(),
     masterCode: l.ml_code,
     name: l.line_descr,
     nameEn: l.line_descr_eng || null,

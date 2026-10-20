@@ -6,14 +6,27 @@ This document records the main decisions for the app and the reasons behind them
 
 | # | Decision | Reason |
 |---|---|---|
-| 1 | Build a web app first (installable PWA later in P3). Wrap it with Capacitor if it needs to be in the app stores. | One codebase, no store review, and location access works in the browser. |
+| 1 | Build an installable web app (PWA). Wrap it with Capacitor only if it needs to be in the app stores. | One codebase, no store review, and location access works in the browser. Installed from the browser, it gets its own icon, opens full screen and works offline. |
 | 2 | No backend of our own, but API calls go through a thin same-origin proxy (`/oasa/*` → `telematics.oasa.gr`): Vite's proxy in development, a Cloudflare Pages Function in production. | OASA sends `Access-Control-Allow-Origin: *` only on some endpoints (e.g. `webGetLines`, `webGetStops`) and not on `getClosestStops`, `getStopArrivals` or `webRoutesForStop`, so browsers block direct calls. |
-| 3 | Static data (stops, routes, route shapes) comes from files built ahead of time from the official GTFS feed. | The API has no "all stops" endpoint, and the GTFS feed (~30 MB) is too large to load in a browser. |
+| 3 | The list of all stops is a file (`public/data/stops.json`) rebuilt nightly by crawling the live API (lines → routes → stops). | The API has no "all stops" endpoint. The official GTFS feed was considered, but it is published irregularly (stale since 6 Oct 2026) and misses temporary routes, while the API is what OASA's own app uses. |
 | 4 | Live data (arrivals, bus positions, closest stops) and line timetables come from the API. | The published GTFS timetable goes stale between uploads, and there is no GTFS-Realtime feed. |
 | 5 | Stack: React, TypeScript, Vite, TanStack Query, React Router, MapLibre with OpenFreeMap tiles. | Widely used, free map tiles with no API key, and MapLibre handles thousands of points. |
 | 6 | The API client lives in a separate library repo, installed from GitHub pinned to a commit. | The library stays reusable and fixes can go upstream. Pinning to a commit means a later push cannot change what gets installed. |
 | 7 | Keep the proxy thin: forward GET requests to `/api/` only. Add caching or combined calls to it later if needed. | It already exists because of CORS (decision 2), so it is the natural place for edge caching if OASA becomes slow or unreliable. |
 | 8 | No accounts. Favourites are stored on the device. | Keeps the app simple and private. |
+| 9 | Offline: the service worker caches the app, map tiles and the stops file; TanStack Query saves lines, routes and timetables in localStorage (refetched after 12 h and 1 h); live data (arrivals, nearby stops) is never saved. | The app opens and shows what you looked at before without a connection, while anything shown as live really is live. |
+
+## Keeping data current
+
+- **Routes, stops of a route and timetables** are fetched from the API when needed. Saved copies are
+  shown at once and refetched in the background once they are older than 12 h (routes and stops) or
+  1 h (timetables), so detours and timetable changes appear within hours.
+- **The stops file** is rebuilt every night by `.github/workflows/update-stops.yml`, which runs
+  `scripts/build-stops.ts` (~1,200 requests, about a minute) and commits only when something changed;
+  the push redeploys the site. The script refuses to replace the file when it finds under 90% of the
+  previous number of stops, so a bad night at OASA can't empty the map. Run it locally with
+  `npm run build:stops`.
+- The service worker serves the saved stops file first and fetches the new one in the background.
 
 ## Layers
 
