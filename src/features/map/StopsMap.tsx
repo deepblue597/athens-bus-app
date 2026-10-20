@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Map, { Layer, Marker, NavigationControl, Source, type MapRef } from 'react-map-gl/maplibre'
-import { MAP_STYLE } from './mapSetup'
+import { MAP_PIXEL_RATIO, MAP_STYLE, flattenBuildings } from './mapSetup'
 import { ATHENS_CENTER, distanceInMeters, type LatLng } from '../../domain/geo'
 import type { MapStop, Stop } from '../../domain/types'
 import './StopsMap.css'
@@ -25,10 +25,19 @@ export function StopsMap({ focus, userLocation, stops, allStops = [], onSelectSt
   const mapRef = useRef<MapRef>(null)
   const [hoveringStop, setHoveringStop] = useState(false)
 
+  // The first move to the user's position jumps (flying there would load tiles all along the way);
+  // later moves, e.g. "Search this area" or "Use my location", fly
+  const hasFocused = useRef(false)
   useEffect(() => {
     const map = mapRef.current
     if (focus && map) {
-      map.flyTo({ center: [focus.lng, focus.lat], zoom: Math.max(map.getZoom(), STOP_ZOOM) })
+      const camera = { center: [focus.lng, focus.lat] as [number, number], zoom: Math.max(map.getZoom(), STOP_ZOOM) }
+      if (hasFocused.current) {
+        map.flyTo(camera)
+      } else {
+        map.jumpTo(camera)
+      }
+      hasFocused.current = true
     }
   }, [focus])
 
@@ -53,6 +62,8 @@ export function StopsMap({ focus, userLocation, stops, allStops = [], onSelectSt
       ref={mapRef}
       initialViewState={{ longitude: initial.lng, latitude: initial.lat, zoom: focus ? STOP_ZOOM : 14 }}
       mapStyle={MAP_STYLE}
+      pixelRatio={MAP_PIXEL_RATIO}
+      onStyleData={(e) => flattenBuildings(e.target)}
       style={{ position: 'absolute', inset: 0 }}
       interactiveLayerIds={['all-stops-hit']}
       cursor={hoveringStop ? 'pointer' : undefined}
