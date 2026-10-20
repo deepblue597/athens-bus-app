@@ -77,6 +77,21 @@ $ANDROID_HOME/platform-tools/adb install -r app/build/outputs/apk/debug/app-debu
 
 Unlike the website, the app doesn't update itself: after changes, rebuild and reinstall it.
 
+### Release APK
+
+Release builds are signed with the owner's key, which never goes into git: `android/keystore.properties`
+(copy `keystore.properties.example`) points to the key file and holds its passwords. Every update must
+be signed with the same key, so the key file and password need a backup.
+
+```sh
+keytool -genkeypair -v -keystore ~/keys/athens-bus-release.jks -alias athensbus \
+  -keyalg RSA -keysize 4096 -validity 10000          # once
+npm run build:android:release                        # android/app/build/outputs/apk/release/app-release.apk
+```
+
+Raise `versionCode` (and `versionName`) in `android/app/build.gradle` for each release, or Android
+won't install it over the previous one. Without `keystore.properties`, release builds stay unsigned.
+
 Or open `android/` in Android Studio and press Run.
 
 ## Roadmap

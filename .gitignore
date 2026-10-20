@@ -26,3 +26,8 @@ dist-ssr
 # Wrangler (Cloudflare) local state and build output
 .wrangler
 .dev.vars
+
+# Android release signing (never commit keys or their passwords)
+android/keystore.properties
+*.jks
+*.keystore
