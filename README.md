@@ -57,6 +57,28 @@ connections from Greece; Cloudflare runs the function in Athens for users there.
 - `public/_headers` caches the hashed files in `/assets/` for a year.
 - Try the production setup locally: `npm run build && npx wrangler dev`.
 
+## Android app
+
+The same app wrapped with [Capacitor](https://capacitorjs.com) (`capacitor.config.ts`, native project in
+`android/`). Inside the app, OASA is called directly through Android's HTTP stack (no proxy, no CORS
+limits, and the requests come from the phone), there is no service worker (the files are in the app),
+and the stops file ships with the app.
+
+Requirements: Android Studio (it installs the Android SDK in `~/Android/Sdk`) and a full **JDK 21**
+(`sudo apt install openjdk-21-jdk-headless`). A Java runtime alone (JRE) can't compile, and the Java
+bundled with recent Android Studio (25) is too new for this project's Gradle 8.
+
+```sh
+export ANDROID_HOME=~/Android/Sdk JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+npm run build:android                # web build without the service worker, copied into android/
+cd android && ./gradlew assembleDebug # APK in android/app/build/outputs/apk/debug/
+$ANDROID_HOME/platform-tools/adb install -r app/build/outputs/apk/debug/app-debug.apk  # phone with USB debugging
+```
+
+Unlike the website, the app doesn't update itself: after changes, rebuild and reinstall it.
+
+Or open `android/` in Android Studio and press Run.
+
 ## Roadmap
 
 - [x] Project setup: map of Athens, routes, data layer

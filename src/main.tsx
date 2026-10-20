@@ -2,9 +2,12 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { RouterProvider } from 'react-router'
+import { handleAndroidBackButton } from './app/androidBackButton'
 import { persistOptions, queryClient } from './app/queryClient'
 import { router } from './app/router'
 import './index.css'
+
+handleAndroidBackButton()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
