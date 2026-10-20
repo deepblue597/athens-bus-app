@@ -64,13 +64,18 @@ The same app wrapped with [Capacitor](https://capacitorjs.com) (`capacitor.confi
 limits, and the requests come from the phone), there is no service worker (the files are in the app),
 and the stops file ships with the app.
 
-Requirements: Android Studio (for the Android SDK, in `~/Android/Sdk`) and JDK 21.
+Requirements: Android Studio (it installs the Android SDK in `~/Android/Sdk`) and a full JDK; the
+one bundled with Android Studio works (`~/android-studio/jbr`). A Java runtime alone (JRE) can't
+compile.
 
 ```sh
+export ANDROID_HOME=~/Android/Sdk JAVA_HOME=~/android-studio/jbr
 npm run build:android                # web build without the service worker, copied into android/
 cd android && ./gradlew assembleDebug # APK in android/app/build/outputs/apk/debug/
-adb install -r app/build/outputs/apk/debug/app-debug.apk   # phone connected with USB debugging
+$ANDROID_HOME/platform-tools/adb install -r app/build/outputs/apk/debug/app-debug.apk  # phone with USB debugging
 ```
+
+Unlike the website, the app doesn't update itself: after changes, rebuild and reinstall it.
 
 Or open `android/` in Android Studio and press Run.
 
