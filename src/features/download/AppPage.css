@@ -1,0 +1,141 @@
+.app-page {
+  flex: 1;
+  overflow-y: auto;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+}
+
+.app-page h2 {
+  margin: 32px 0 8px;
+  font-size: 1.125rem;
+}
+
+.app-page p {
+  margin: 8px 0;
+}
+
+.app-hero {
+  text-align: center;
+}
+
+.app-hero-icon {
+  border-radius: 16px;
+}
+
+.app-hero h1 {
+  margin: 12px 0 4px;
+  font-size: 1.625rem;
+  line-height: 1.2;
+}
+
+.app-hero-lead {
+  max-width: 34rem;
+  margin: 0 auto 20px !important;
+  color: var(--color-text-muted);
+}
+
+.download-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 12px 28px;
+  border-radius: 999px;
+  background: var(--color-brand);
+  color: var(--color-on-brand);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.download-button:hover {
+  filter: brightness(1.08);
+}
+
+.download-meta,
+.app-alt {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.app-alt a,
+.app-footer a {
+  color: var(--color-brand-text);
+}
+
+/* Screenshots scroll sideways on phones */
+.app-screens {
+  display: flex;
+  gap: 12px;
+  margin: 28px -16px 0;
+  padding: 0 16px 8px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  list-style: none;
+}
+
+.app-screens li {
+  flex: 0 0 auto;
+  scroll-snap-align: center;
+}
+
+.app-screens figure {
+  margin: 0;
+}
+
+.app-screens img {
+  display: block;
+  width: 180px;
+  height: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+
+.app-screens figcaption {
+  margin-top: 6px;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  text-align: center;
+}
+
+.app-features,
+.app-steps {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.app-features li,
+.app-steps li {
+  margin: 6px 0;
+}
+
+.app-fingerprint {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--color-hover);
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+}
+
+.app-footer {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+}
+
+@media (min-width: 768px) {
+  /* "safe" never pushes the first screenshot out of reach if they don't all fit */
+  .app-screens {
+    justify-content: safe center;
+  }
+
+  .app-screens img {
+    width: 160px;
+  }
+}
