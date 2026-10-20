@@ -1,0 +1,44 @@
+.app-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 4px 6px 16px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-hover);
+}
+
+.app-banner img {
+  flex-shrink: 0;
+  border-radius: 8px;
+}
+
+.app-banner p {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.app-banner a {
+  color: var(--color-brand-text);
+  font-weight: 700;
+}
+
+.app-banner span {
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+}
+
+.app-banner-close {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+}

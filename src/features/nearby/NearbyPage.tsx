@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router'
+import { Link, useNavigate } from 'react-router'
+import { Capacitor } from '@capacitor/core'
 import { StopsMap } from '../map/StopsMap'
 import { useAllStops } from '../map/useAllStops'
 import { useFavourites } from '../favourites/useFavourites'
+import { AndroidAppBanner } from '../download/AndroidAppBanner'
 import { ATHENS_CENTER, distanceInMeters, formatDistance, type LatLng } from '../../domain/geo'
 import type { Stop } from '../../domain/types'
 import { useUserLocation } from './useUserLocation'
@@ -44,6 +46,7 @@ export function NearbyPage() {
         <h1 id="nearby-heading" className="visually-hidden">
           Nearby stops
         </h1>
+        <AndroidAppBanner />
 
         {favourites.length > 0 && (
           <section aria-labelledby="favourites-heading">
@@ -109,6 +112,16 @@ export function NearbyPage() {
             </li>
           ))}
         </ul>
+
+        <p className="nearby-footer">
+          Unofficial app, not affiliated with OASA. Bus data © OASA.
+          {!Capacitor.isNativePlatform() && (
+            <>
+              {' '}
+              <Link to="/app">Android app</Link>
+            </>
+          )}
+        </p>
       </section>
 
       <div className="nearby-map">
