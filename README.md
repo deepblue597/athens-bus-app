@@ -29,7 +29,7 @@ npm run dev        # http://localhost:5173
 
 There is no backend of our own. OASA only allows cross-origin requests on some endpoints, so the app
 calls `/oasa/*` on its own origin and a thin proxy forwards them to the OASA API (Vite's proxy in
-development; a Cloudflare Pages Function in production, to be added with deployment).
+development; a Cloudflare Worker in production).
 The list of all stops is a file rebuilt every night from the API by a GitHub Action. The app is
 installable and works offline with what you've looked at before. See
 [docs/architecture.md](docs/architecture.md) for the decisions and patterns.
@@ -43,6 +43,20 @@ src/
   features/   One folder per feature: nearby, stop, line, route, map, favourites
 ```
 
+## Deployment
+
+The site runs on **Cloudflare Workers** at https://bus.deepblue597.org (config in `wrangler.jsonc`): the
+built app in `dist/` is served as static assets, and a small Worker (`worker/index.ts`) handles only
+`/oasa/*`, proxying the OASA API (logic and tests in `worker/oasaProxy.ts`). It forwards only the calls
+the app makes and lets Cloudflare's edge cache
+answers for a few seconds (arrivals, bus positions) up to an hour (lines, routes). OASA only accepts
+connections from Greece; Cloudflare runs the function in Athens for users there.
+
+- Workers Builds is connected to the GitHub repo: build command `npm run build`, deploy command
+  `npx wrangler deploy` (Node version from `.node-version`). Every push to `main` deploys.
+- `public/_headers` caches the hashed files in `/assets/` for a year.
+- Try the production setup locally: `npm run build && npx wrangler dev`.
+
 ## Roadmap
 
 - [x] Project setup: map of Athens, routes, data layer
@@ -50,7 +64,8 @@ src/
 - [x] **P2:** line search, timetables, route shapes on the map
 - [x] **P3:** all stops on the map (rebuilt nightly from the API), offline support, installable app, favourites
 - [x] **P4a:** live bus positions on the route map
-- [ ] **P4b:** deployment on Cloudflare Pages, Android app (Capacitor)
+- [x] **P4b:** deployment on Cloudflare Workers
+- [ ] **P4c:** Android app (Capacitor)
 
 ## License
 

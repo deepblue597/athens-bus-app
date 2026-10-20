@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Wrangler (Cloudflare) local state and build output
+.wrangler
+.dev.vars
