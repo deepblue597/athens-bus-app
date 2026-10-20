@@ -45,6 +45,10 @@ src/
 - [ ] **P3:** all stops on the map (from GTFS), offline support, favourites
 - [ ] **P4:** live bus positions, phone app (Capacitor)
 
+## License
+
+MIT. See [LICENSE](LICENSE).
+
 ## Data
 
 Bus data © OASA. Map tiles by [OpenFreeMap](https://openfreemap.org), map data © OpenStreetMap contributors.
