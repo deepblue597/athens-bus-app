@@ -6,21 +6,37 @@ export interface Stop {
   /** Number shown on the stop sign (OASA StopID, GTFS stop_code) */
   displayId: string
   name: string
-  nameEn: string
+  nameEn: string | null
   street: string | null
   lat: number
   lng: number
 }
 
 export interface NearbyStop extends Stop {
-  /** Approximate distance from the requested point, in metres */
+  /** Distance from the requested point, in metres */
   distanceMeters: number
+}
+
+/** A route (one direction of a line) that serves a stop */
+export interface StopRoute {
+  routeCode: string
+  lineCode: string
+  /** Line number shown on the bus, e.g. "Β1" or "040" */
+  lineId: string
+  lineName: string
+  routeName: string
+  routeNameEn: string | null
 }
 
 export interface Arrival {
   routeCode: string
   vehicleCode: string
   minutes: number
+}
+
+export interface LineArrival extends Arrival {
+  /** null when the API reports a route that is not in the stop's route list */
+  route: StopRoute | null
 }
 
 export interface ScheduleTime {

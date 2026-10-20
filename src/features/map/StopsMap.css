@@ -1,0 +1,61 @@
+/* The button is a 44px touch target; the visible dot is drawn by ::after */
+.stop-marker {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.stop-marker::after {
+  content: '';
+  width: 18px;
+  height: 18px;
+  border: 3px solid var(--color-brand);
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  transition: transform 0.1s ease-out;
+}
+
+.stop-marker:hover::after,
+.stop-marker:focus-visible::after {
+  transform: scale(1.3);
+}
+
+.stop-marker:focus-visible {
+  outline: none;
+}
+
+/* The map stays light in dark mode, so the ring colour is fixed */
+.stop-marker:focus-visible::after {
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 0 0 4px #1565c0;
+}
+
+/* Keep the hovered or focused marker above its neighbours */
+.maplibregl-marker:has(.stop-marker:hover, .stop-marker:focus-visible) {
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stop-marker::after {
+    transition: none;
+  }
+}
+
+.user-marker {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  background: #1e88e5;
+  box-shadow: 0 0 0 6px rgba(30, 136, 229, 0.25);
+}

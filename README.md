@@ -25,7 +25,9 @@ npm run dev        # http://localhost:5173
 
 ## How it works
 
-There is no backend. The browser calls the OASA API directly (it allows cross-origin requests).
+There is no backend of our own. OASA only allows cross-origin requests on some endpoints, so the app
+calls `/oasa/*` on its own origin and a thin proxy forwards them to the OASA API (Vite's proxy in
+development; a Cloudflare Pages Function in production, to be added with deployment).
 Static data such as stops and route shapes will come from the official GTFS feed, preprocessed into
 small JSON files. See [docs/architecture.md](docs/architecture.md) for the decisions and patterns.
 
@@ -40,8 +42,8 @@ src/
 ## Roadmap
 
 - [x] Project setup: map of Athens, routes, data layer
-- [ ] **P1:** nearby stops from your location, live arrivals at a stop
-- [ ] **P2:** line search, timetables, route shapes on the map
+- [x] **P1:** nearby stops from your location, live arrivals at a stop
+- [ ] **P2:** ~~route shapes on the map~~ (done), line search, timetables
 - [ ] **P3:** all stops on the map (from GTFS), offline support, favourites
 - [ ] **P4:** live bus positions, phone app (Capacitor)
 

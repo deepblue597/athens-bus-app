@@ -10,6 +10,7 @@
     "lint": "oxlint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:live": "OASA_LIVE=1 vitest run oasa.live",
     "preview": "vite preview"
   },
   "dependencies": {

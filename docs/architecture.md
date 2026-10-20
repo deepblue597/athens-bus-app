@@ -7,12 +7,12 @@ This document records the main decisions for the app and the reasons behind them
 | # | Decision | Reason |
 |---|---|---|
 | 1 | Build a web app first (installable PWA later in P3). Wrap it with Capacitor if it needs to be in the app stores. | One codebase, no store review, and location access works in the browser. |
-| 2 | No backend. The browser calls the OASA API directly. | The API sends `Access-Control-Allow-Origin: *`, so nothing needs to run on a server. |
+| 2 | No backend of our own, but API calls go through a thin same-origin proxy (`/oasa/*` → `telematics.oasa.gr`): Vite's proxy in development, a Cloudflare Pages Function in production. | OASA sends `Access-Control-Allow-Origin: *` only on some endpoints (e.g. `webGetLines`, `webGetStops`) and not on `getClosestStops`, `getStopArrivals` or `webRoutesForStop`, so browsers block direct calls. |
 | 3 | Static data (stops, routes, route shapes) comes from files built ahead of time from the official GTFS feed. | The API has no "all stops" endpoint, and the GTFS feed (~30 MB) is too large to load in a browser. |
 | 4 | Live data (arrivals, bus positions, closest stops) and line timetables come from the API. | The published GTFS timetable goes stale between uploads, and there is no GTFS-Realtime feed. |
 | 5 | Stack: React, TypeScript, Vite, TanStack Query, React Router, MapLibre with OpenFreeMap tiles. | Widely used, free map tiles with no API key, and MapLibre handles thousands of points. |
 | 6 | The API client lives in a separate library repo, installed from GitHub pinned to a commit. | The library stays reusable and fixes can go upstream. Pinning to a commit means a later push cannot change what gets installed. |
-| 7 | Add a small proxy (Cloudflare Worker) only if needed. | Triggers: OASA blocks browser calls, becomes unreliable, or we need push notifications. |
+| 7 | Keep the proxy thin: forward GET requests to `/api/` only. Add caching or combined calls to it later if needed. | It already exists because of CORS (decision 2), so it is the natural place for edge caching if OASA becomes slow or unreliable. |
 | 8 | No accounts. Favourites are stored on the device. | Keeps the app simple and private. |
 
 ## Layers
@@ -52,6 +52,19 @@ database and never writes data.
 ## OASA data notes
 
 - GTFS `stop_id` is the API's `StopCode`; GTFS `stop_code` is the API's `StopID` (the number on the sign).
+- CORS headers are only sent on `webGetLines`, `webGetLinesWithMLInfo`, `webGetRoutes` and `webGetStops`,
+  so all calls go through the `/oasa` proxy.
+- Every response is HTTP 200. Errors arrive as `{"error": "..."}`, "nothing found" is usually `null`
+  but `""` for `getBusLocation`. Run list responses through `asList()` in `data/oasa/adapters.ts`.
+- `getClosestStops` always returns exactly 20 stops, ranked by flat lat/lng degrees rather than real
+  distance, so in dense areas it can skip closer stops. `toNearbyStops()` keeps only the radius where
+  that cannot happen.
+- `getStopArrivals` sometimes lists every bus twice; `webRoutesForStop` repeats routes once per master
+  line and includes hidden detour/seasonal routes. The adapters remove both.
+- Some stops returned by `getClosestStops` are not served by any line (no routes, no arrivals).
+- Circular routes list their first stop again at the end, so a stop code is not unique within a route.
+- The library does not URL-encode parameters, so the app only passes numeric codes (`isOasaCode`).
+- Typical latency is 0.1–0.3 s; the client times out after 5 s and retries once.
 - About 94% of stop codes seen in the API exist in the GTFS feed; the rest need an API fallback.
 - Timetable times look like `1900-01-01 05:10:00`. Trips after midnight use `1900-01-02`.
 - In a timetable entry, the `*1` fields describe the outbound trip and the `*2` fields the return trip.
