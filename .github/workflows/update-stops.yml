@@ -2,7 +2,7 @@ name: Update stops
 
 # Rebuilds public/data/stops.json from the live OASA API so new stops and temporary routes
 # appear within a day. Commits only when the data changed; the push triggers a redeploy through
-# Cloudflare Pages' Git integration. Pushes made with GITHUB_TOKEN don't start other workflows, so
+# Cloudflare Workers Builds' Git integration. Pushes made with GITHUB_TOKEN don't start other workflows, so
 # this can't loop (and a deploy done by a GitHub Actions workflow would need a PAT here instead).
 on:
   schedule:
