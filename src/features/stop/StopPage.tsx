@@ -3,6 +3,7 @@ import type { Stop } from '../../domain/types'
 import { useFavourites } from '../favourites/useFavourites'
 import { useAllStops } from '../map/useAllStops'
 import { routeState } from './routeState'
+import { RefreshTimer } from '../../shared/RefreshTimer'
 import { StopLinesSheet } from './StopLinesSheet'
 import { ARRIVALS_REFRESH_MS, useStopArrivals } from './useStopArrivals'
 import './StopPage.css'
@@ -56,18 +57,17 @@ export function StopPage() {
         <span>
           {updatedAt > 0
             ? `Updated ${new Date(updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
-            : 'Live arrivals'}{' '}
-          · refreshes every {ARRIVALS_REFRESH_MS / 1000} s
+            : 'Live arrivals'}
         </span>
-        {/* Not disabled while fetching: disabling would drop keyboard focus */}
-        <button
-          type="button"
-          className="link-button"
-          onClick={() => refetch({ cancelRefetch: false })}
-          aria-busy={isFetching}
-        >
-          {isFetching ? 'Refreshing…' : 'Refresh'}
-        </button>
+        {isValidCode && (
+          <RefreshTimer
+            intervalMs={ARRIVALS_REFRESH_MS}
+            updatedAt={updatedAt}
+            isFetching={isFetching}
+            onRefresh={() => refetch({ cancelRefetch: false })}
+            label="Refresh arrivals"
+          />
+        )}
       </div>
 
       <div aria-live="polite">

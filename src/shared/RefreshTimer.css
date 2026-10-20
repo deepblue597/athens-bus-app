@@ -1,0 +1,76 @@
+.refresh-timer {
+  position: relative;
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--color-brand-text);
+  cursor: pointer;
+}
+
+.refresh-timer:hover {
+  background: var(--color-hover);
+}
+
+.refresh-timer svg {
+  grid-area: 1 / 1;
+  width: 32px;
+  height: 32px;
+  /* Start the ring at the top and empty it clockwise */
+  transform: rotate(-90deg);
+}
+
+.refresh-timer-track {
+  fill: none;
+  stroke: var(--color-border);
+  stroke-width: 3;
+}
+
+.refresh-timer-progress {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  /* Ticks once a second; the transition makes the ring move smoothly in between */
+  transition: stroke-dashoffset 1s linear;
+}
+
+.refresh-timer-seconds {
+  grid-area: 1 / 1;
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.refresh-timer--busy svg {
+  animation: refresh-timer-spin 0.9s linear infinite;
+}
+
+.refresh-timer--busy .refresh-timer-progress {
+  transition: none;
+}
+
+@keyframes refresh-timer-spin {
+  from {
+    transform: rotate(-90deg);
+  }
+  to {
+    transform: rotate(270deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .refresh-timer-progress {
+    transition: none;
+  }
+
+  .refresh-timer--busy svg {
+    animation: none;
+  }
+}

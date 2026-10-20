@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import type { Stop, StopRoute } from '../../domain/types'
+import { RefreshTimer } from '../../shared/RefreshTimer'
 import { RouteMap } from './RouteMap'
 import { BUS_REFRESH_MS, useBusLocations } from './useBusLocations'
 import { useRouteDetails } from './useRouteDetails'
@@ -71,7 +72,8 @@ export function RoutePage() {
           </Link>
         )}
         {busQuery.isSuccess && (
-          <p className="route-buses">
+          <div className="route-buses">
+            <p>
             {buses.length === 0
               ? 'No buses are reporting on this route right now.'
               : `${buses.length} ${buses.length === 1 ? 'bus' : 'buses'} on this route`}
@@ -79,11 +81,15 @@ export function RoutePage() {
               (trackedIsLive
                 ? ` · yours (${trackedBus.minutes <= 0 ? 'arriving now' : `in ${trackedBus.minutes} min`}) is green`
                 : ' · your bus isn’t reporting its position')}
-            <span className="route-buses-updated">
-              {' '}
-              · updated every {BUS_REFRESH_MS / 1000} s
-            </span>
-          </p>
+            </p>
+            <RefreshTimer
+              intervalMs={BUS_REFRESH_MS}
+              updatedAt={busQuery.dataUpdatedAt}
+              isFetching={busQuery.isFetching}
+              onRefresh={() => busQuery.refetch({ cancelRefetch: false })}
+              label="Refresh bus positions"
+            />
+          </div>
         )}
       </header>
 
