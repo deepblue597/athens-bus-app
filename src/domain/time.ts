@@ -12,6 +12,12 @@ export function athensMinutesNow(date: Date = new Date()): number {
   return get('hour') * 60 + get('minute')
 }
 
+/** Today's date in Athens as YYYY-MM-DD, e.g. to key data that is only valid for one day */
+export function athensDate(date: Date | number = new Date()): string {
+  // en-CA formats dates as YYYY-MM-DD
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Athens', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date)
+}
+
 const DAY_MINUTES = 24 * 60
 
 /**

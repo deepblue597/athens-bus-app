@@ -84,7 +84,7 @@ export function toStopRoutes(raw: IRouteOfStop[] | null): StopRoute[] {
     routes.push({
       routeCode: r.RouteCode,
       lineCode: r.LineCode,
-      lineId: r.LineID,
+      lineId: r.LineID.trim(),
       lineName: r.LineDescr,
       routeName: r.RouteDescr,
       routeNameEn: r.RouteDescrEng || null,

@@ -18,7 +18,7 @@ export function RoutePage() {
   const { routeCode = '' } = useParams()
   const navigate = useNavigate()
   const { route: routeInfo, fromStopCode, fromStop, fromLine } = (useLocation().state as RoutePageState | null) ?? {}
-  const { data: route, isValidCode, isPending, isError, refetch } = useRouteDetails(routeCode)
+  const { data: route, isValidCode, isPending, isPaused, isError, refetch } = useRouteDetails(routeCode)
 
   const openStop = (stop: Stop) => navigate(`/stop/${stop.code}`, { state: { stop } })
   const title = routeInfo ? `${routeInfo.lineId} ${routeInfo.routeName}` : `Route ${routeCode}`
@@ -68,7 +68,12 @@ export function RoutePage() {
 
       <section className="route-stops" aria-label="Stops on this route">
         {!isValidCode && <p className="route-message">“{routeCode}” isn’t a valid route code.</p>}
-        {isPending && <p className="route-message">Loading route…</p>}
+        {/* Paused: offline, and TanStack Query waits for the connection */}
+        {isPending && (
+          <p className="route-message">
+            {isPaused ? 'This route isn’t saved on this device. It will load when you’re back online.' : 'Loading route…'}
+          </p>
+        )}
         {isError && (
           <p className="route-message">
             Couldn’t load the route.{' '}

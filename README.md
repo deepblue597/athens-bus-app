@@ -22,21 +22,25 @@ npm run dev        # http://localhost:5173
 | `npm run lint` | Lint with oxlint |
 | `npm run typecheck` | Type-check the project |
 | `npm run build` | Type-check and build for production into `dist/` |
+| `npm run build:stops` | Rebuild `public/data/stops.json` from the live API (also runs nightly on GitHub) |
+| `npm run test:live` | Run the smoke tests against the real OASA API |
 
 ## How it works
 
 There is no backend of our own. OASA only allows cross-origin requests on some endpoints, so the app
 calls `/oasa/*` on its own origin and a thin proxy forwards them to the OASA API (Vite's proxy in
 development; a Cloudflare Pages Function in production, to be added with deployment).
-Static data such as stops and route shapes will come from the official GTFS feed, preprocessed into
-small JSON files. See [docs/architecture.md](docs/architecture.md) for the decisions and patterns.
+The list of all stops is a file rebuilt every night from the API by a GitHub Action. The app is
+installable and works offline with what you've looked at before. See
+[docs/architecture.md](docs/architecture.md) for the decisions and patterns.
 
 ```
+scripts/      build-stops.ts: crawls the API into public/data/stops.json
 src/
-  app/        Providers, router, layout
-  domain/     The app's own types (Stop, Arrival, ...)
-  data/oasa/  OASA client and adapters that turn raw API data into domain types
-  features/   One folder per feature: nearby, stop, line, route, map
+  app/        Providers, router, layout, offline status
+  domain/     The app's own types and logic (Stop, Arrival, search, time...)
+  data/       Stops file, favourites; data/oasa/: OASA client and adapters
+  features/   One folder per feature: nearby, stop, line, route, map, favourites
 ```
 
 ## Roadmap
@@ -44,7 +48,7 @@ src/
 - [x] Project setup: map of Athens, routes, data layer
 - [x] **P1:** nearby stops from your location, live arrivals at a stop
 - [x] **P2:** line search, timetables, route shapes on the map
-- [ ] **P3:** all stops on the map (from GTFS), offline support, favourites
+- [x] **P3:** all stops on the map (rebuilt nightly from the API), offline support, installable app, favourites
 - [ ] **P4:** live bus positions, phone app (Capacitor)
 
 ## License

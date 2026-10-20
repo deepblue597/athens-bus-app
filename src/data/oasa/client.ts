@@ -10,11 +10,11 @@ const TIMEOUT_MS = 5000
 const RETRIES = 1
 
 /**
- * Stop and route codes are numeric. The library puts them in the query string without encoding,
- * so a crafted link such as /stop/1&p1=2 could otherwise add parameters to the OASA request.
+ * Stop and route codes are numeric (one real stop is "-2"). The library puts them in the query string
+ * without encoding, so a crafted link such as /stop/1&p1=2 could otherwise add parameters to the request.
  */
 export function isOasaCode(code: string): boolean {
-  return /^\d{1,10}$/.test(code)
+  return /^-?\d{1,10}$/.test(code)
 }
 
 // OASA has no uptime guarantee: give up on slow requests and retry once before failing.

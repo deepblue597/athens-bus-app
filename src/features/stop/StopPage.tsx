@@ -1,5 +1,7 @@
 import { Link, useLocation, useParams } from 'react-router'
 import type { Stop } from '../../domain/types'
+import { useFavourites } from '../favourites/useFavourites'
+import { useAllStops } from '../map/useAllStops'
 import { routeState } from './routeState'
 import { StopLinesSheet } from './StopLinesSheet'
 import { ARRIVALS_REFRESH_MS, useStopArrivals } from './useStopArrivals'
@@ -7,9 +9,12 @@ import './StopPage.css'
 
 export function StopPage() {
   const { stopCode = '' } = useParams()
-  // The stop's details come from the page that linked here; a shared link only has the code
-  const stop = (useLocation().state as { stop?: Stop } | null)?.stop
-  const { isValidCode, arrivals, routes, isLoading, isError, isFetching, updatedAt, refetch } =
+  // The stop's details come from the page that linked here, or from the stops file for a shared link
+  const linkedStop = (useLocation().state as { stop?: Stop } | null)?.stop
+  const allStops = useAllStops(!linkedStop)
+  const stop = linkedStop ?? allStops.data?.find((s) => s.code === stopCode)
+  const { isFavourite, toggleFavourite } = useFavourites()
+  const { isValidCode, arrivals, routes, isLoading, isError, isFetching, isPaused, updatedAt, refetch } =
     useStopArrivals(stopCode)
   // Unknown stops and stops no line serves both come back empty (about a quarter of the stops near Syntagma)
   const isUnserved = routes?.length === 0
@@ -25,13 +30,26 @@ export function StopPage() {
       </Link>
 
       <header className="stop-header">
-        <div>
+        <div className="stop-heading">
           <h1>{title}</h1>
           {stop && (
             <p className="stop-subtitle">{[stop.nameEn, stop.street, `No. ${stop.displayId}`].filter(Boolean).join(' · ')}</p>
           )}
         </div>
-        {routes && routes.length > 0 && <StopLinesSheet routes={routes} stopCode={stopCode} stop={stop} />}
+        <div className="stop-actions">
+          {stop && (
+            <button
+              type="button"
+              className="favourite-button"
+              aria-pressed={isFavourite(stop.code)}
+              onClick={() => toggleFavourite(stop)}
+            >
+              <span aria-hidden="true">{isFavourite(stop.code) ? '★' : '☆'}</span>
+              <span className="visually-hidden">Favourite</span>
+            </button>
+          )}
+          {routes && routes.length > 0 && <StopLinesSheet routes={routes} stopCode={stopCode} stop={stop} />}
+        </div>
       </header>
 
       <div className="arrivals-toolbar">
@@ -54,7 +72,15 @@ export function StopPage() {
 
       <div aria-live="polite">
         {!isValidCode && <p className="arrivals-message">“{stopCode}” isn’t a valid stop code.</p>}
-        {isLoading && <p className="arrivals-message">Loading arrivals…</p>}
+        {isLoading &&
+          (isPaused ? (
+            <p className="arrivals-message">Live arrivals will load when you’re back online.</p>
+          ) : (
+            <p className="arrivals-message">Loading arrivals…</p>
+          ))}
+        {isPaused && arrivals && (
+          <p className="arrivals-message arrivals-stale">You’re offline. Showing the last update.</p>
+        )}
         {isError && !arrivals && (
           <p className="arrivals-message">
             Live arrivals are unavailable right now.{' '}

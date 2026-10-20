@@ -11,7 +11,7 @@ export function LinesPage() {
   const query = params.get('q') ?? ''
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLUListElement>(null)
-  const { data: lines, isPending, isError, refetch } = useLines()
+  const { data: lines, isPending, isPaused, isError, refetch } = useLines()
   const results = useMemo(() => (lines ? searchLines(lines, query) : []), [lines, query])
 
   const setQuery = (q: string) => setParams(q ? { q } : {}, { replace: true })
@@ -51,7 +51,9 @@ export function LinesPage() {
       </form>
 
       <div aria-live="polite" className="lines-status">
-        {isPending && <p>Loading lines…</p>}
+        {isPending && (
+          <p>{isPaused ? 'The line list isn’t saved on this device yet. It will load when you’re back online.' : 'Loading lines…'}</p>
+        )}
         {isError && (
           <p>
             Couldn’t load the lines.{' '}

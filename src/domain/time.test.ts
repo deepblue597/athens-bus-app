@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { athensMinutesNow, nextDepartureIndex } from './time'
+import { athensDate, athensMinutesNow, nextDepartureIndex } from './time'
 import type { ScheduleTime } from './types'
 
 const t = (label: string, minutesOfServiceDay: number): ScheduleTime => ({ label, minutesOfServiceDay })
@@ -12,6 +12,14 @@ describe('athensMinutesNow', () => {
 
   it('uses Athens time (UTC+2 in winter)', () => {
     expect(athensMinutesNow(new Date('2026-12-01T09:15:00Z'))).toBe(11 * 60 + 15)
+  })
+})
+
+describe('athensDate', () => {
+  it('changes at midnight in Athens, not UTC', () => {
+    expect(athensDate(new Date('2026-10-20T20:59:00Z'))).toBe('2026-10-20')
+    expect(athensDate(new Date('2026-10-20T21:00:00Z'))).toBe('2026-10-21')
+    expect(athensDate(Date.UTC(2026, 11, 31, 22, 0))).toBe('2027-01-01')
   })
 })
 

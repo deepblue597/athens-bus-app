@@ -1,23 +1,29 @@
-import { useEffect, useRef } from 'react'
-import Map, { Marker, NavigationControl, type MapRef } from 'react-map-gl/maplibre'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import Map, { Layer, Marker, NavigationControl, Source, type MapRef } from 'react-map-gl/maplibre'
 import { MAP_STYLE } from './mapSetup'
-import { ATHENS_CENTER, type LatLng } from '../../domain/geo'
-import type { Stop } from '../../domain/types'
+import { ATHENS_CENTER, distanceInMeters, type LatLng } from '../../domain/geo'
+import type { MapStop, Stop } from '../../domain/types'
 import './StopsMap.css'
 
 const STOP_ZOOM = 16
+/** Every stop is drawn as a small dot from this zoom level; below it the dots would just be noise */
+const ALL_STOPS_MIN_ZOOM = 13
 
 interface StopsMapProps {
   /** The map flies here whenever it changes */
   focus: LatLng | null
   userLocation: LatLng | null
+  /** Highlighted stops (the nearby ones), drawn as large markers */
   stops: Stop[]
+  /** Every stop, drawn as small tappable dots */
+  allStops?: MapStop[]
   onSelectStop: (stop: Stop) => void
   onMoveEnd?: (center: LatLng) => void
 }
 
-export function StopsMap({ focus, userLocation, stops, onSelectStop, onMoveEnd }: StopsMapProps) {
+export function StopsMap({ focus, userLocation, stops, allStops = [], onSelectStop, onMoveEnd }: StopsMapProps) {
   const mapRef = useRef<MapRef>(null)
+  const [hoveringStop, setHoveringStop] = useState(false)
 
   useEffect(() => {
     const map = mapRef.current
@@ -25,6 +31,20 @@ export function StopsMap({ focus, userLocation, stops, onSelectStop, onMoveEnd }
       map.flyTo({ center: [focus.lng, focus.lat], zoom: Math.max(map.getZoom(), STOP_ZOOM) })
     }
   }, [focus])
+
+  const allStopsData = useMemo(
+    () => ({
+      type: 'FeatureCollection' as const,
+      features: allStops.map((s) => ({
+        type: 'Feature' as const,
+        properties: { code: s.code },
+        geometry: { type: 'Point' as const, coordinates: [s.lng, s.lat] },
+      })),
+    }),
+    [allStops],
+  )
+  // `Map` here is the map component, hence globalThis.Map
+  const stopsByCode = useMemo(() => new globalThis.Map(allStops.map((s) => [s.code, s])), [allStops])
 
   const initial = focus ?? ATHENS_CENTER
 
@@ -34,12 +54,55 @@ export function StopsMap({ focus, userLocation, stops, onSelectStop, onMoveEnd }
       initialViewState={{ longitude: initial.lng, latitude: initial.lat, zoom: focus ? STOP_ZOOM : 14 }}
       mapStyle={MAP_STYLE}
       style={{ position: 'absolute', inset: 0 }}
+      interactiveLayerIds={['all-stops-hit']}
+      cursor={hoveringStop ? 'pointer' : undefined}
+      onMouseEnter={() => setHoveringStop(true)}
+      onMouseLeave={() => setHoveringStop(false)}
+      onClick={(e) => {
+        // MapLibre sees clicks on the large markers before React does, so ignore them here
+        if ((e.originalEvent.target as HTMLElement | null)?.closest('.maplibregl-marker')) {
+          return
+        }
+        // Tap areas of neighbouring dots overlap when zoomed out; take the one closest to the tap
+        const tapped = (e.features ?? [])
+          .map((f) => stopsByCode.get(String(f.properties?.code)))
+          .filter((stop) => stop !== undefined)
+        const closest = tapped.reduce<MapStop | undefined>(
+          (best, stop) =>
+            !best || distanceInMeters(e.lngLat, stop) < distanceInMeters(e.lngLat, best) ? stop : best,
+          undefined,
+        )
+        if (closest) {
+          onSelectStop(closest)
+        }
+      }}
       onMoveEnd={(e) => {
         const { lat, lng } = e.target.getCenter()
         onMoveEnd?.({ lat, lng })
       }}
     >
       <NavigationControl position="top-right" showCompass={false} />
+
+      <Source id="all-stops" type="geojson" data={allStopsData}>
+        <Layer
+          id="all-stops"
+          type="circle"
+          minzoom={ALL_STOPS_MIN_ZOOM}
+          paint={{
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, 2.5, 16, 5, 18, 7],
+            'circle-color': '#ffffff',
+            'circle-stroke-color': '#1565c0',
+            'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 13, 1, 16, 2],
+          }}
+        />
+        {/* Invisible, larger circles so the small dots are easy to tap */}
+        <Layer
+          id="all-stops-hit"
+          type="circle"
+          minzoom={ALL_STOPS_MIN_ZOOM}
+          paint={{ 'circle-radius': 14, 'circle-opacity': 0, 'circle-stroke-opacity': 0 }}
+        />
+      </Source>
 
       {stops.map((stop) => (
         <Marker key={stop.code} longitude={stop.lng} latitude={stop.lat} anchor="center">

@@ -1,4 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router'
+import { useOnline } from './useOnline'
 import './Layout.css'
 
 const NAV = [
@@ -9,6 +10,7 @@ const NAV = [
 
 export function Layout() {
   const { pathname } = useLocation()
+  const online = useOnline()
 
   return (
     <div className="layout">
@@ -33,6 +35,14 @@ export function Layout() {
           })}
         </nav>
       </header>
+      {/* The live region is always present: screen readers miss messages in a region that was hidden */}
+      <div role="status">
+        {!online && (
+          <p className="offline-banner">
+            You’re offline. Saved timetables, routes and stops still work; live arrivals don’t.
+          </p>
+        )}
+      </div>
       <main className="layout-main">
         <Outlet />
       </main>

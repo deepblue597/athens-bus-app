@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { ROUTES_STALE_MS } from '../../app/queryClient'
 import { isOasaCode, oasaApi } from '../../data/oasa/client'
 import { toArrivals, toStopRoutes, withRoutes } from '../../data/oasa/adapters'
 
@@ -16,12 +17,11 @@ export function useStopArrivals(stopCode: string) {
     staleTime: 10_000,
   })
 
-  // The lines serving a stop rarely change
   const routes = useQuery({
     queryKey: ['stopRoutes', stopCode],
     queryFn: async () => toStopRoutes(await oasaApi.webRoutesForStop(stopCode)),
     enabled: isValidCode,
-    staleTime: 24 * 60 * 60_000,
+    staleTime: ROUTES_STALE_MS,
   })
 
   return {
@@ -31,6 +31,8 @@ export function useStopArrivals(stopCode: string) {
     isLoading: isValidCode && arrivals.isPending,
     isError: arrivals.isError,
     isFetching: arrivals.isFetching,
+    /** Offline: TanStack Query waits for the connection instead of fetching */
+    isPaused: arrivals.isPaused,
     updatedAt: arrivals.dataUpdatedAt,
     refetch: arrivals.refetch,
   }
