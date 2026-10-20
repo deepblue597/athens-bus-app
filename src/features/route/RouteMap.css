@@ -29,3 +29,39 @@
   outline: 3px solid #e65100;
   outline-offset: 2px;
 }
+
+/* Live bus: an arrow pointing the way it drives (the marker itself is rotated by the heading) */
+.bus-marker {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: #0d47a1;
+  color: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+}
+
+.bus-marker svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+/* Green, not orange: the stop the user came from is already orange and the bus is often next to it */
+.bus-marker--tracked {
+  width: 34px;
+  height: 34px;
+  border-width: 3px;
+  background: #2e7d32;
+}
+
+.bus-marker--tracked svg {
+  width: 20px;
+  height: 20px;
+}
+
+.bus-marker--stale {
+  opacity: 0.45;
+}

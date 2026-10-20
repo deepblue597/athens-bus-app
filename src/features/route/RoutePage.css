@@ -43,6 +43,12 @@
   text-decoration: underline;
 }
 
+.route-buses {
+  margin: 6px 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+}
+
 .route-map {
   position: relative;
   height: 50%;

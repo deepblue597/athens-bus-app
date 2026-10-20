@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import type { Stop, StopRoute } from '../../domain/types'
 import { RouteMap } from './RouteMap'
+import { BUS_REFRESH_MS, useBusLocations } from './useBusLocations'
 import { useRouteDetails } from './useRouteDetails'
 import './RoutePage.css'
 
@@ -12,13 +13,24 @@ export interface RoutePageState {
   fromStop?: Stop
   /** Set when coming from a line's timetable, so the back link returns there */
   fromLine?: { code: string; id: string; name: string }
+  /** Set when coming from an arrival: that bus is highlighted on the map */
+  trackedBus?: { vehicleCode: string; minutes: number }
 }
+
+/** Positions older than this are hidden: the bus has probably finished its trip or lost signal */
+const BUS_HIDE_MS = 10 * 60_000
 
 export function RoutePage() {
   const { routeCode = '' } = useParams()
   const navigate = useNavigate()
-  const { route: routeInfo, fromStopCode, fromStop, fromLine } = (useLocation().state as RoutePageState | null) ?? {}
+  const { route: routeInfo, fromStopCode, fromStop, fromLine, trackedBus } =
+    (useLocation().state as RoutePageState | null) ?? {}
   const { data: route, isValidCode, isPending, isPaused, isError, refetch } = useRouteDetails(routeCode)
+  const busQuery = useBusLocations(routeCode)
+  // Positions are aged against the time they were fetched, which moves on with every poll
+  const now = busQuery.dataUpdatedAt
+  const buses = (busQuery.data ?? []).filter((b) => b.reportedAt === null || now - b.reportedAt < BUS_HIDE_MS)
+  const trackedIsLive = trackedBus !== undefined && buses.some((b) => b.vehicleCode === trackedBus.vehicleCode)
 
   const openStop = (stop: Stop) => navigate(`/stop/${stop.code}`, { state: { stop } })
   const title = routeInfo ? `${routeInfo.lineId} ${routeInfo.routeName}` : `Route ${routeCode}`
@@ -58,11 +70,33 @@ export function RoutePage() {
             Timetable <span aria-hidden="true">›</span>
           </Link>
         )}
+        {busQuery.isSuccess && (
+          <p className="route-buses">
+            {buses.length === 0
+              ? 'No buses are reporting on this route right now.'
+              : `${buses.length} ${buses.length === 1 ? 'bus' : 'buses'} on this route`}
+            {trackedBus &&
+              (trackedIsLive
+                ? ` · yours (${trackedBus.minutes <= 0 ? 'arriving now' : `in ${trackedBus.minutes} min`}) is green`
+                : ' · your bus isn’t reporting its position')}
+            <span className="route-buses-updated">
+              {' '}
+              · updated every {BUS_REFRESH_MS / 1000} s
+            </span>
+          </p>
+        )}
       </header>
 
       <div className="route-map">
         {route && route.path.length + route.stops.length > 0 && (
-          <RouteMap route={route} highlightedStopCode={fromStopCode} onSelectStop={openStop} />
+          <RouteMap
+            route={route}
+            highlightedStopCode={fromStopCode}
+            buses={buses}
+            trackedVehicle={trackedBus?.vehicleCode}
+            now={now}
+            onSelectStop={openStop}
+          />
         )}
       </div>
 

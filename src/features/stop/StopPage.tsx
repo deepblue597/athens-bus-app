@@ -105,9 +105,9 @@ export function StopPage() {
           <li key={`${a.routeCode}-${a.vehicleCode}`}>
             <Link
               to={`/route/${a.routeCode}`}
-              state={routeState(a.route, stopCode, stop)}
+              state={routeState(a.route, stopCode, stop, a)}
               className="arrival"
-              aria-label={`${a.route ? `Line ${a.route.lineId}, ${a.route.routeName}` : `Route ${a.routeCode}`}, ${minutesLabel(a.minutes)}. Show route on map`}
+              aria-label={`${a.route ? `Line ${a.route.lineId}, ${a.route.routeName}` : `Route ${a.routeCode}`}, ${minutesLabel(a.minutes)}. Show the route and this bus on the map`}
             >
               <span className="line-badge">{a.route?.lineId ?? '?'}</span>
               <span className="arrival-route">{a.route?.routeName ?? `Route ${a.routeCode}`}</span>
