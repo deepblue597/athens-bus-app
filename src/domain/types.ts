@@ -34,6 +34,17 @@ export interface StopRoute {
   routeNameEn: string | null
 }
 
+/** A bus's last reported position on a route */
+export interface BusLocation {
+  vehicleCode: string
+  lat: number
+  lng: number
+  /** Degrees clockwise from north, when reported */
+  heading: number | null
+  /** When the bus reported this position (epoch ms), when the date could be read */
+  reportedAt: number | null
+}
+
 export interface Arrival {
   routeCode: string
   vehicleCode: string

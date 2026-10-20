@@ -9,7 +9,7 @@ This document records the main decisions for the app and the reasons behind them
 | 1 | Build an installable web app (PWA). Wrap it with Capacitor only if it needs to be in the app stores. | One codebase, no store review, and location access works in the browser. Installed from the browser, it gets its own icon, opens full screen and works offline. |
 | 2 | No backend of our own, but API calls go through a thin same-origin proxy (`/oasa/*` → `telematics.oasa.gr`): Vite's proxy in development, a Cloudflare Pages Function in production. | OASA sends `Access-Control-Allow-Origin: *` only on some endpoints (e.g. `webGetLines`, `webGetStops`) and not on `getClosestStops`, `getStopArrivals` or `webRoutesForStop`, so browsers block direct calls. |
 | 3 | The list of all stops is a file (`public/data/stops.json`) rebuilt nightly by crawling the live API (lines → routes → stops). | The API has no "all stops" endpoint. The official GTFS feed was considered, but it is published irregularly (stale since 6 Oct 2026) and misses temporary routes, while the API is what OASA's own app uses. |
-| 4 | Live data (arrivals, bus positions, closest stops) and line timetables come from the API. | The published GTFS timetable goes stale between uploads, and there is no GTFS-Realtime feed. |
+| 4 | Live data (arrivals, bus positions every 15 s, closest stops) and line timetables come from the API. | The published GTFS timetable goes stale between uploads, and there is no GTFS-Realtime feed. |
 | 5 | Stack: React, TypeScript, Vite, TanStack Query, React Router, MapLibre with OpenFreeMap tiles. | Widely used, free map tiles with no API key, and MapLibre handles thousands of points. |
 | 6 | The API client lives in a separate library repo, installed from GitHub pinned to a commit. | The library stays reusable and fixes can go upstream. Pinning to a commit means a later push cannot change what gets installed. |
 | 7 | Keep the proxy thin: forward GET requests to `/api/` only. Add caching or combined calls to it later if needed. | It already exists because of CORS (decision 2), so it is the natural place for edge caching if OASA becomes slow or unreliable. |
@@ -21,9 +21,11 @@ This document records the main decisions for the app and the reasons behind them
 - **Routes, stops of a route and timetables** are fetched from the API when needed. Saved copies are
   shown at once and refetched in the background once they are older than 12 h (routes and stops) or
   1 h (timetables), so detours and timetable changes appear within hours.
-- **The stops file** is rebuilt every night by `.github/workflows/update-stops.yml`, which runs
-  `scripts/build-stops.ts` (~1,200 requests, about a minute) and commits only when something changed;
-  the push redeploys the site. The script refuses to replace the file when it finds under 90% of the
+- **The stops file** is rebuilt by `scripts/build-stops.ts` (~1,200 requests, about 2 minutes), which
+  writes only when something changed. `.github/workflows/update-stops.yml` was meant to run it nightly,
+  but **OASA drops connections from outside Greece** (GitHub's runners time out; see the data notes),
+  so the workflow is disabled and the script is run from a machine in Greece:
+  `npm run build:stops`, then commit and push. The script refuses to replace the file when it finds under 90% of the
   previous number of stops, so a bad night at OASA can't empty the map. Run it locally with
   `npm run build:stops`.
 - The service worker serves the saved stops file first and fetches the new one in the background.
@@ -78,6 +80,13 @@ database and never writes data.
 - Circular routes list their first stop again at the end, so a stop code is not unique within a route.
 - The library does not URL-encode parameters, so the app only passes numeric codes (`isOasaCode`).
 - Typical latency is 0.1–0.3 s; the client times out after 5 s and retries once.
+- `telematics.oasa.gr` only accepts connections from Greece (checked 20 Oct 2026): from GitHub's
+  runners (US) the TCP connection times out on ports 80 and 443, while `www.oasa.gr` answers. A
+  Cloudflare Worker running in Athens (`ATH`) gets through over HTTPS, so the production proxy works
+  for users in Greece. Plain HTTP doesn't answer from anywhere.
+- It throttles with HTTP 403 above about 10 requests per second.
+- `getBusLocation` reports `CS_DATE` in Athens local time (`Oct 20 2026 08:56:56:000PM`), and its
+  `VEH_NO` is the same code as `veh_code` in `getStopArrivals`, so an arrival can be matched to a bus.
 
 ### Timetables
 

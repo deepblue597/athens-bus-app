@@ -18,6 +18,32 @@ export function athensDate(date: Date | number = new Date()): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Athens', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date)
 }
 
+/**
+ * Epoch ms of a wall-clock time in Athens (month is 1-12). OASA reports times in Athens local time
+ * without a zone, and the offset is +2 or +3 depending on daylight saving time.
+ */
+export function athensTimeToEpoch(year: number, month: number, day: number, hour: number, minute: number, second = 0): number {
+  const asUtc = Date.UTC(year, month - 1, day, hour, minute, second)
+  // Athens' offset at that moment, found by formatting the UTC guess in Athens time
+  const offsetAt = (epoch: number) => {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Europe/Athens',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(epoch)
+    const get = (type: string) => Number(parts.find((p) => p.type === type)?.value)
+    return Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second')) - epoch
+  }
+  const first = asUtc - offsetAt(asUtc)
+  // A second pass gets the offset right next to a daylight saving change
+  return asUtc - offsetAt(first)
+}
+
 const DAY_MINUTES = 24 * 60
 
 /**

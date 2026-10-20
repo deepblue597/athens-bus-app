@@ -1,8 +1,9 @@
 // Anti-corruption layer: turns raw OASA responses (numbers as strings, 1900-01-01 dates,
 // mixed field names, nulls where the types promise strings) into the app's domain types.
-import type { IArrival, IClosestStop, IRouteOfStop, IStop } from 'oasa-telematics-api'
+import type { IArrival, IBusLocation, IClosestStop, IRouteOfStop, IStop } from 'oasa-telematics-api'
 import { distanceInMeters, type LatLng } from '../../domain/geo'
-import type { Arrival, LineArrival, NearbyStop, ScheduleTime, Stop, StopRoute } from '../../domain/types'
+import { athensTimeToEpoch } from '../../domain/time'
+import type { Arrival, BusLocation, LineArrival, NearbyStop, ScheduleTime, Stop, StopRoute } from '../../domain/types'
 
 /** OASA answers bad requests with HTTP 200 and a body like {"error":"invalid parameters"} */
 export class OasaApiError extends Error {
@@ -133,4 +134,34 @@ export function parseScheduleTime(raw: string | null): ScheduleTime | null {
     label: `${hours}:${minutes}`,
     minutesOfServiceDay: dayOffset + Number(hours) * 60 + Number(minutes),
   }
+}
+
+/** getBusLocation answers "" (not null) when no bus is on the route; asList handles both */
+export function toBusLocations(raw: IBusLocation[] | '' | null): BusLocation[] {
+  return asList(raw as IBusLocation[] | null)
+    .map((b) => ({
+      vehicleCode: b.VEH_NO,
+      lat: Number(b.CS_LAT),
+      lng: Number(b.CS_LNG),
+      heading: b.VEH_HEADING === null || b.VEH_HEADING === '' ? null : Number(b.VEH_HEADING),
+      reportedAt: parseOasaDate(b.CS_DATE),
+    }))
+    .filter((b) => Number.isFinite(b.lat) && Number.isFinite(b.lng) && b.lat !== 0)
+}
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+/** "Oct 20 2026 08:56:56:000PM" (Athens time) → epoch ms, or null if the format is unexpected */
+export function parseOasaDate(raw: string | null): number | null {
+  const match = raw?.match(/^(\w{3}) +(\d{1,2}) (\d{4}) +(\d{1,2}):(\d{2}):(\d{2})(?::\d{3})?(AM|PM)$/)
+  if (!match) {
+    return null
+  }
+  const [, monthName, day, year, hour12, minute, second, ampm] = match
+  const month = MONTHS.indexOf(monthName) + 1
+  if (month === 0) {
+    return null
+  }
+  const hour = (Number(hour12) % 12) + (ampm === 'PM' ? 12 : 0)
+  return athensTimeToEpoch(Number(year), month, Number(day), hour, Number(minute), Number(second))
 }

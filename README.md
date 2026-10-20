@@ -22,7 +22,7 @@ npm run dev        # http://localhost:5173
 | `npm run lint` | Lint with oxlint |
 | `npm run typecheck` | Type-check the project |
 | `npm run build` | Type-check and build for production into `dist/` |
-| `npm run build:stops` | Rebuild `public/data/stops.json` from the live API (also runs nightly on GitHub) |
+| `npm run build:stops` | Rebuild `public/data/stops.json` from the live API (must run from Greece: OASA blocks other countries) |
 | `npm run test:live` | Run the smoke tests against the real OASA API |
 
 ## How it works
@@ -49,7 +49,8 @@ src/
 - [x] **P1:** nearby stops from your location, live arrivals at a stop
 - [x] **P2:** line search, timetables, route shapes on the map
 - [x] **P3:** all stops on the map (rebuilt nightly from the API), offline support, installable app, favourites
-- [ ] **P4:** live bus positions, phone app (Capacitor)
+- [x] **P4a:** live bus positions on the route map
+- [ ] **P4b:** deployment on Cloudflare Pages, Android app (Capacitor)
 
 ## License
 
