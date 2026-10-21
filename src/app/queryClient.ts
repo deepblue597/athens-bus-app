@@ -27,7 +27,16 @@ export const queryClient = new QueryClient({
  * Data saved on the device so it's there offline and on the next visit. Live data (arrivals,
  * nearby stops) is never saved, and the stops file is cached by the service worker instead.
  */
-const PERSISTED_QUERIES = new Set(['lines', 'lineDirections', 'scheduleDays', 'timetable', 'routeDetails', 'stopRoutes'])
+const PERSISTED_QUERIES = new Set([
+  'lines',
+  'lineDirections',
+  'scheduleDays',
+  'timetable',
+  'routeDetails',
+  'stopRoutes',
+  // The News list, so it shows offline and when oasa.gr is down (single announcements come from it)
+  'announcements',
+])
 
 /**
  * The "Today" timetable (key ['timetable', lineCode, 'today', ...]) is that day's plan: after

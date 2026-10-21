@@ -1,14 +1,21 @@
 // Cloudflare Worker entry. wrangler.jsonc serves the built app (dist/) as static assets and only
-// runs this for /oasa/*, which goes to the OASA proxy.
+// runs this for /oasa/* (OASA's telematics API) and /oasa-web/* (announcements from www.oasa.gr).
 import { proxyOasa } from './oasaProxy.ts'
+import { proxyOasaWeb, type WaitUntil } from './oasaWebProxy.ts'
 
 interface Env {
   ASSETS: { fetch(request: Request): Promise<Response> }
 }
 
 export default {
-  fetch(request: Request, env: Env): Promise<Response> {
+  fetch(request: Request, env: Env, ctx: WaitUntil): Promise<Response> {
     const { pathname } = new URL(request.url)
-    return pathname.startsWith('/oasa/') ? proxyOasa(request) : env.ASSETS.fetch(request)
+    if (pathname.startsWith('/oasa/')) {
+      return proxyOasa(request)
+    }
+    if (pathname.startsWith('/oasa-web/')) {
+      return proxyOasaWeb(request, ctx)
+    }
+    return env.ASSETS.fetch(request)
   },
 }

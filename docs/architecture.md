@@ -16,6 +16,7 @@ This document records the main decisions for the app and the reasons behind them
 | 8 | No accounts. Favourites are stored on the device. | Keeps the app simple and private. |
 | 9 | Offline: the service worker caches the app, map tiles and the stops file; TanStack Query saves lines, routes and timetables in localStorage (refetched after 12 h and 1 h); live data (arrivals, nearby stops) is never saved. | The app opens and shows what you looked at before without a connection, while anything shown as live really is live. |
 | 10 | Android app with Capacitor: the same build (`--mode android`, no service worker) in a native WebView; OASA calls go through Capacitor's native HTTP. | One codebase. Native HTTP has no CORS limits and runs from the phone, so the app doesn't depend on the proxy or on Cloudflare reaching OASA. |
+| 11 | The News tab reads OASA's announcements from www.oasa.gr's WordPress REST API (category 82), not by scraping the page. On the web it goes through a second allowlisted Worker route (`/oasa-web/*`) that rebuilds the request and keeps answers in Cloudflare's Cache API (5 min for the first page, 1 h otherwise, a day-old copy when oasa.gr is down). The Android app calls oasa.gr directly, as in decision 10. Bodies are shown in the app after DOMPurify (`shared/sanitizeHtml.ts`) with a link to the original. | The API has full, structured posts and is up to date, while the HTML page is served from a cache hours old. Parsing stays in the app (one code path for web and Android); the Worker only protects oasa.gr, whose API isn't cached and takes 1–2 s. Every announcement credits and links to oasa.gr. |
 
 ## Keeping data current
 
@@ -88,6 +89,23 @@ database and never writes data.
 - It throttles with HTTP 403 above about 10 requests per second.
 - `getBusLocation` reports `CS_DATE` in Athens local time (`Oct 20 2026 08:56:56:000PM`), and its
   `VEH_NO` is the same code as `veh_code` in `getStopArrivals`, so an arrival can be matched to a bus.
+
+### Announcements (www.oasa.gr)
+
+- WordPress REST API: `/wp-json/wp/v2/posts?categories=82` is the "Ανακοινώσεις" list (~3 posts a
+  day). The English category (95) has a few posts weeks behind, so the app shows the Greek ones.
+- `date_gmt` and `modified_gmt` are UTC without a `Z`; `date` is Athens time. Paging uses
+  `before=<date_gmt>Z`: without the `Z` WordPress reads it as Athens time and skips posts. `before`
+  is exclusive, so posts published in the same second can repeat across pages (the app dedupes).
+- `search=` is fuzzy (`search=060` also finds Χ20), so it can't filter by line.
+- The API sends `Cache-Control: max-age=0` and a `Set-Cookie`, and takes 1–2 s; the HTML page
+  `/ανακοινώσεις/` is served from Varnish and was ~6 h behind the API when checked (21 Oct 2026).
+- Bodies use only `p`, `strong`/`b`, `u`, `em`, `sup`, `br`, lists, tables (lists of closed stops,
+  with stop codes) and the odd link, sometimes wrapped in `<article>`. 95 of 100 start with
+  "Με στόχο την ενημέρωση ... ο ΟΑΣΑ ανακοινώνει", which the list summary leaves out.
+- `npm run test:live` checks the category, paging and single posts against the live site.
+- OASA's terms say the site's content is for personal use and reprinting needs written permission;
+  the app credits and links every announcement, but permission hasn't been asked for (Oct 2026).
 
 ### Timetables
 

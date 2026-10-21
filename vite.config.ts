@@ -2,12 +2,19 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
-// OASA doesn't send CORS headers on most endpoints, so /oasa/* is proxied to it
+// OASA doesn't send CORS headers on most endpoints, so /oasa/* is proxied to it. /oasa-web/* is
+// www.oasa.gr's announcements, proxied (and cached) in production by worker/oasaWebProxy.ts.
+// The trailing slashes matter: a plain '/oasa' would also catch /oasa-web
 const oasaProxy = {
-  '/oasa': {
+  '/oasa/': {
     target: 'https://telematics.oasa.gr',
     changeOrigin: true,
     rewrite: (path: string) => path.replace(/^\/oasa/, ''),
+  },
+  '/oasa-web/': {
+    target: 'https://www.oasa.gr',
+    changeOrigin: true,
+    rewrite: (path: string) => path.replace(/^\/oasa-web/, ''),
   },
 }
 
@@ -47,7 +54,7 @@ export default defineConfig(({ mode }) => ({
         globPatterns: ['**/*.{js,mjs,css,html,svg,png}'],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/oasa\//, /^\/data\//],
+        navigateFallbackDenylist: [/^\/oasa\//, /^\/oasa-web\//, /^\/data\//],
         runtimeCaching: [
           {
             // Rebuilt nightly: show the saved copy at once and fetch the new one in the background
