@@ -6,6 +6,8 @@ import { LinesPage } from '../features/line/LinesPage'
 import { LinePage } from '../features/line/LinePage'
 import { RoutePage } from '../features/route/RoutePage'
 import { AppPage } from '../features/download/AppPage'
+import { NewsPage } from '../features/news/NewsPage'
+import { AnnouncementPage } from '../features/news/AnnouncementPage'
 
 // The URL holds what is on screen, so links can be shared and the back button works
 export const router = createBrowserRouter([
@@ -18,6 +20,8 @@ export const router = createBrowserRouter([
       // LineCode, not the line number: several variants share a number (e.g. three lines are "Α7")
       { path: 'line/:lineCode', element: <LinePage /> },
       { path: 'route/:routeCode', element: <RoutePage /> },
+      { path: 'news', element: <NewsPage /> },
+      { path: 'news/:id', element: <AnnouncementPage /> },
       { path: 'app', element: <AppPage /> },
     ],
   },

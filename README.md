@@ -1,8 +1,9 @@
 # Athens Bus
 
-A web app for Athens buses: nearby stops, live arrivals, line timetables and a map of stops.
-It uses the public [OASA telematics API](https://telematics.oasa.gr) through
-[oasa-telematics-api](https://github.com/deepblue597/oasa-telematics-api).
+A web app for Athens buses: nearby stops, live arrivals, line timetables, a map of stops and OASA's
+service announcements. It uses the public [OASA telematics API](https://telematics.oasa.gr) through
+[oasa-telematics-api](https://github.com/deepblue597/oasa-telematics-api), and the
+[announcements on oasa.gr](https://www.oasa.gr/ανακοινώσεις/).
 
 > Work in progress. See the [roadmap](#roadmap).
 
@@ -39,8 +40,8 @@ scripts/      build-stops.ts: crawls the API into public/data/stops.json
 src/
   app/        Providers, router, layout, offline status
   domain/     The app's own types and logic (Stop, Arrival, search, time...)
-  data/       Stops file, favourites; data/oasa/: OASA client and adapters
-  features/   One folder per feature: nearby, stop, line, route, map, favourites
+  data/       Stops file, favourites; data/oasa/: OASA client and adapters; data/oasaWeb/: announcements
+  features/   One folder per feature: nearby, stop, line, route, map, favourites, news
 ```
 
 ## Deployment
@@ -50,7 +51,9 @@ built app in `dist/` is served as static assets, and a small Worker (`worker/ind
 `/oasa/*`, proxying the OASA API (logic and tests in `worker/oasaProxy.ts`). It forwards only the calls
 the app makes and lets Cloudflare's edge cache
 answers for a few seconds (arrivals, bus positions) up to an hour (lines, routes). OASA only accepts
-connections from Greece; Cloudflare runs the function in Athens for users there.
+connections from Greece; Cloudflare runs the function in Athens for users there. It also handles
+`/oasa-web/*`, the News tab's requests to www.oasa.gr (`worker/oasaWebProxy.ts`), keeping answers in
+Cloudflare's cache and serving a saved copy when oasa.gr is down.
 
 - Workers Builds is connected to the GitHub repo: build command `npm run build`, deploy command
   `npx wrangler deploy` (Node version from `.node-version`). Every push to `main` deploys.
@@ -113,6 +116,7 @@ Or open `android/` in Android Studio and press Run.
 - [x] **P4a:** live bus positions on the route map
 - [x] **P4b:** deployment on Cloudflare Workers
 - [ ] **P4c:** Android app (Capacitor)
+- [x] **P5:** News tab with OASA's service announcements
 
 ## License
 
@@ -120,4 +124,4 @@ MIT. See [LICENSE](LICENSE).
 
 ## Data
 
-Bus data © OASA. Map tiles by [OpenFreeMap](https://openfreemap.org), map data © OpenStreetMap contributors.
+Bus data and announcements © OASA (each announcement links to the original on oasa.gr). Map tiles by [OpenFreeMap](https://openfreemap.org), map data © OpenStreetMap contributors.

@@ -50,6 +50,33 @@
   opacity: 1;
 }
 
+.nav-dot {
+  width: 8px;
+  height: 8px;
+  margin: -10px 0 0 3px;
+  border-radius: 50%;
+  background: #ffb300;
+}
+
+/* Three tabs and the title fit on a 320px-wide phone */
+@media (max-width: 380px) {
+  .layout-header {
+    gap: 4px;
+  }
+
+  .layout-title {
+    font-size: 1rem;
+  }
+
+  .layout-nav {
+    gap: 0;
+  }
+
+  .layout-nav a {
+    padding: 0 8px;
+  }
+}
+
 .layout-title:focus-visible,
 .layout-nav a:focus-visible {
   outline-color: var(--color-on-brand);

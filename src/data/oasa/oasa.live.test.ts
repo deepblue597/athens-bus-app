@@ -5,6 +5,8 @@ import { APIRequests, type RequestFunction } from 'oasa-telematics-api'
 import { ATHENS_CENTER } from '../../domain/geo'
 import { asList, OasaApiError, toArrivals, toNearbyStops, toStopRoutes, withRoutes } from './adapters'
 import { toLineDirections, toLines, toScheduleDays, toTimetable } from './lineAdapters'
+import { toAnnouncement, toAnnouncementsPage } from '../oasaWeb/announcementAdapters'
+import { BEFORE_PATTERN, PAGE_SIZE, POSTS_PATH, postQuery, postsListQuery } from '../oasaWeb/postsQuery'
 
 const live = Boolean(import.meta.env.OASA_LIVE)
 
@@ -87,6 +89,22 @@ describe.skipIf(!live)('OASA live API', { timeout: 60_000 }, () => {
       const directions = toLineDirections(await api.webGetRoutes(line.code))
       expect(directions.map((d) => d.type), line.id).toEqual(timetable.inbound.length > 0 ? ['1', '2'] : ['1'])
     }
+  })
+
+  it('lists announcements from www.oasa.gr that the adapter can read, page after page', async () => {
+    // The same requests the app makes; a renumbered category or a disabled REST API fails here
+    const get = async (query: string) => {
+      const res = await fetch(`https://www.oasa.gr${POSTS_PATH}${query}`, { signal: AbortSignal.timeout(15_000) })
+      expect(res.status, query).toBe(200)
+      return res.json()
+    }
+    const first = toAnnouncementsPage(await get(postsListQuery()))
+    expect(first.items.length).toBe(PAGE_SIZE)
+    expect(first.nextBefore).toMatch(BEFORE_PATTERN)
+    const second = toAnnouncementsPage(await get(postsListQuery(first.nextBefore)))
+    expect(second.items[0].publishedAt).toBeLessThan(first.items.at(-1)!.publishedAt)
+    const single = toAnnouncement(await get(`/${first.items[0].id}${postQuery()}`))
+    expect(single.title).toBe(first.items[0].title)
   })
 
   it('reports bad parameters as {"error": ...} with status 200', async () => {
