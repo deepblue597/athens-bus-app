@@ -1,0 +1,55 @@
+name: Update metro timetable
+
+# Rebuilds public/data/metro.json from STASY's GTFS feed on data.gov.gr. STASY publishes a new
+# timetable a few times a year, often late, so this checks nightly and commits only when the data
+# changed; the push triggers a redeploy through Cloudflare Workers Builds' Git integration. Pushes
+# made with GITHUB_TOKEN don't start other workflows, so this can't loop.
+# The job fails (shows red) while the published timetable has ended; the app then uses the last
+# published week of the same weekday and says so.
+on:
+  schedule:
+    - cron: '45 1 * * *' # 03:45/04:45 Athens time
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-metro
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      # The script only uses Node built-ins, so no npm install is needed
+      - run: node scripts/build-metro.ts
+        id: build
+        continue-on-error: true
+      - name: Commit if the timetable changed
+        run: |
+          if [ -z "$(git status --porcelain -- public/data/metro.json)" ]; then
+            echo "Metro timetable unchanged"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add public/data/metro.json
+            git commit -m "Update the metro timetable from STASY's feed"
+            # Someone may have pushed meanwhile: replay this commit on top and retry
+            pushed=false
+            for attempt in 1 2 3; do
+              if git pull --rebase --quiet && git push; then pushed=true; break; fi
+              sleep $((attempt * 10))
+            done
+            [ "$pushed" = true ] || exit 1
+          fi
+      # An expired timetable is still written above; report the failure after committing
+      - if: steps.build.outcome == 'failure'
+        run: |
+          echo "::error::build-metro.ts failed (see the build step: an expired timetable or a feed problem)"
+          exit 1

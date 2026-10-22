@@ -63,6 +63,12 @@ export default defineConfig(({ mode }) => ({
             options: { cacheName: 'stops-file', expiration: { maxEntries: 1 } },
           },
           {
+            // The metro timetable, rebuilt when STASY publishes a new one
+            urlPattern: ({ url }) => url.pathname === '/data/metro.json',
+            handler: 'StaleWhileRevalidate',
+            options: { cacheName: 'metro-file', expiration: { maxEntries: 1 } },
+          },
+          {
             // Tile URLs include the map data version, so a cached tile never changes
             urlPattern: ({ url }) => url.origin === 'https://tiles.openfreemap.org' && /^\/planet\/[^/]+\/\d+\//.test(url.pathname),
             handler: 'CacheFirst',
