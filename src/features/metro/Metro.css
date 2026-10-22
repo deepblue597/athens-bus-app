@@ -1,0 +1,355 @@
+/* The list is first in the DOM; on phones the map is shown above it */
+.metro {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+.metro-map {
+  position: relative;
+  height: 50%;
+  min-height: 240px;
+}
+
+.metro-panel {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.metro-intro {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.metro-intro h1 {
+  margin: 0 0 4px;
+  font-size: 1.25rem;
+}
+
+.metro-intro p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.metro-intro strong {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.metro-notice {
+  margin: 8px 0 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  font-size: 0.875rem;
+}
+
+.metro-intro .metro-notice {
+  color: var(--color-warning-text);
+}
+
+.metro-message {
+  margin: 0;
+  padding: 16px;
+  color: var(--color-text-muted);
+}
+
+.metro-badge {
+  display: inline-block;
+  flex-shrink: 0;
+  min-width: 2.5em;
+  padding: 2px 6px;
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.metro-line {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.metro-line summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 16px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.metro-line summary::-webkit-details-marker {
+  display: none;
+}
+
+/* A chevron that turns when the line is open */
+.metro-line summary::after {
+  content: '›';
+  margin-left: auto;
+  color: var(--color-text-muted);
+  font-size: 1.25rem;
+  transition: transform 0.15s ease-out;
+}
+
+.metro-line[open] summary::after {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .metro-line summary::after {
+    transition: none;
+  }
+}
+
+.metro-line summary:hover {
+  background: var(--color-hover);
+}
+
+.metro-line summary:focus-visible {
+  outline-offset: -2px;
+}
+
+.metro-line-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.metro-line-sub {
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+
+.metro-station-list {
+  margin: 0;
+  padding: 0 0 8px;
+  list-style: none;
+}
+
+.metro-station-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 6px 16px 6px 28px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.metro-station-item:hover,
+.metro-station-item:focus-visible {
+  background: var(--color-hover);
+}
+
+.metro-station-item:focus-visible {
+  outline-offset: -2px;
+}
+
+.metro-station-dot {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  border: 3px solid;
+  border-radius: 50%;
+  background: var(--color-surface);
+}
+
+.metro-station-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-weight: 500;
+}
+
+.metro-station-name-en {
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+
+.metro-station-lines {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.metro-station-lines .metro-badge {
+  font-size: 0.75rem;
+}
+
+.metro-credit {
+  margin: 0;
+  padding: 16px;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.metro-credit a {
+  color: var(--color-brand-text);
+}
+
+/* The map stays light in dark mode, so the legend does too */
+.metro-legend {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #222222;
+  font-size: 0.75rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+.metro-legend-train {
+  width: 12px;
+  height: 12px;
+  border: 3px solid #555555;
+  border-radius: 50%;
+  background: radial-gradient(circle, #555555 0 2px, #ffffff 2.5px);
+}
+
+@media (min-width: 768px) {
+  .metro {
+    flex-direction: row;
+  }
+
+  .metro-map {
+    flex: 1;
+    height: auto;
+  }
+
+  .metro-panel {
+    flex: 0 0 360px;
+    border-right: 1px solid var(--color-border);
+  }
+}
+
+@media (max-width: 767px) and (max-height: 640px) {
+  .metro-map {
+    min-height: 200px;
+  }
+}
+
+/* Station page */
+.metro-station-page {
+  flex: 1;
+  overflow-y: auto;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 12px 16px 24px;
+}
+
+.metro-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  margin: -4px 0;
+  color: var(--color-brand-text);
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+
+.metro-back:hover {
+  text-decoration: underline;
+}
+
+.metro-station-header h1 {
+  margin: 4px 0 0;
+  font-size: 1.5rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.metro-station-subtitle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.metro-station-subtitle .metro-badge {
+  font-size: 0.75rem;
+}
+
+.metro-scheduled {
+  margin: 16px 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.metro-station-page .metro-message {
+  padding: 16px 0;
+}
+
+.metro-direction {
+  margin-top: 20px;
+}
+
+.metro-direction h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.metro-direction-en {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+
+.metro-departures {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.metro-departure {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-height: 44px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.metro-departure-time {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.metro-departure-dest {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.metro-departure-in {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}

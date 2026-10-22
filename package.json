@@ -13,6 +13,7 @@
     "test:live": "OASA_LIVE=1 vitest run oasa.live",
     "preview": "vite preview",
     "build:stops": "node scripts/build-stops.ts",
+    "build:metro": "node scripts/build-metro.ts",
     "build:android": "tsc -b && vite build --mode android && cap sync android",
     "build:android:release": "npm run build:android && cd android && ./gradlew assembleRelease"
   },
