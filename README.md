@@ -98,15 +98,14 @@ npm run build:android:release                        # android/app/build/outputs
 Raise `versionCode` (and `versionName`) in `android/app/build.gradle` for each release, or Android
 won't install it over the previous one. Without `keystore.properties`, release builds stay unsigned.
 
-Publishing: attach the APK to a GitHub release **as `athens-bus.apk`**, so the download page
-(https://bus.deepblue597.org/app) and its "latest" link pick it up:
+Publishing: attach the APK to a GitHub release **named `athens-bus.apk`**, so the download page
+(https://bus.deepblue597.org/app) and its "latest" link pick it up. Copy it under that name first:
+`gh release create file#name` only sets the asset's display label, and the file keeps its own name.
 
 ```sh
-gh release create v1.1 android/app/build/outputs/apk/release/app-release.apk#athens-bus.apk \
-  --title "Athens Bus 1.1" --notes "What changed"
+cp android/app/build/outputs/apk/release/app-release.apk /tmp/athens-bus.apk
+gh release create v1.3 /tmp/athens-bus.apk --title "Athens Bus 1.3" --notes "What changed"
 ```
-
-GitHub names the asset after the file, so copy or rename it to `athens-bus.apk` first if needed.
 
 Or open `android/` in Android Studio and press Run.
 

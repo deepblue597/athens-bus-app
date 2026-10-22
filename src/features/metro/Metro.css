@@ -347,6 +347,11 @@
   font-size: 0.875rem;
 }
 
+.metro-departure-short {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
 .metro-departure-in {
   flex-shrink: 0;
   color: var(--color-text-muted);

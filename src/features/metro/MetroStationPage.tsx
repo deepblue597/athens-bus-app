@@ -68,7 +68,7 @@ export function MetroStationPage() {
                 <h2 id={headingId}>
                   <MetroLineBadge line={line} />
                   <span>
-                    to {towards.name}
+                    towards {towards.name}
                     <span className="metro-direction-en">{towards.nameEn}</span>
                   </span>
                 </h2>
@@ -76,8 +76,9 @@ export function MetroStationPage() {
                   {group.departures.map((d) => (
                     <li key={d.key} className="metro-departure">
                       <span className="metro-departure-time">{timeFormat.format(d.time)}</span>
-                      <span className="metro-departure-dest">
-                        {d.destination !== group.towards && `Terminates at ${network.stations[d.destination].name}`}
+                      {/* Every train says where it ends; one ending before the end of the line stands out */}
+                      <span className={d.destination === group.towards ? 'metro-departure-dest' : 'metro-departure-dest metro-departure-short'}>
+                        to {network.stations[d.destination].name}
                       </span>
                       <span className="metro-departure-in">{inLabel(d, now)}</span>
                     </li>
