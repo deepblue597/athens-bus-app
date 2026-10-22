@@ -15,6 +15,8 @@
   --color-favourite-bg: #fff4d6;
   --color-warning-bg: #fff3cd;
   --color-warning-text: #5c4400;
+  /* The pill behind the active tab's icon in the bottom bar */
+  --color-nav-indicator: rgba(21, 101, 192, 0.14);
 
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;
@@ -40,6 +42,7 @@
     --color-favourite-bg: #3a3320;
     --color-warning-bg: #3d3200;
     --color-warning-text: #ffe08a;
+    --color-nav-indicator: rgba(144, 202, 249, 0.16);
   }
 }
 

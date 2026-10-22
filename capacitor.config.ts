@@ -5,6 +5,11 @@ const config: CapacitorConfig = {
   appId: 'org.deepblue597.athensbus',
   appName: 'Athens Bus',
   webDir: 'dist',
+  plugins: {
+    // The app draws under the system bars (viewport-fit=cover in index.html); saying so up front
+    // avoids a layout jump while the page loads
+    SystemBars: { initialViewportFitValueHint: 'cover' },
+  },
 }
 
 export default config
