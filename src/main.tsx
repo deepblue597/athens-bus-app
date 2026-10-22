@@ -7,7 +7,7 @@ import { persistOptions, queryClient } from './app/queryClient'
 import { router } from './app/router'
 import './index.css'
 
-handleAndroidBackButton()
+handleAndroidBackButton(router)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
