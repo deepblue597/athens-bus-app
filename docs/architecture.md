@@ -18,6 +18,7 @@ This document records the main decisions for the app and the reasons behind them
 | 10 | Android app with Capacitor: the same build (`--mode android`, no service worker) in a native WebView; OASA calls go through Capacitor's native HTTP. | One codebase. Native HTTP has no CORS limits and runs from the phone, so the app doesn't depend on the proxy or on Cloudflare reaching OASA. |
 | 11 | The News tab reads OASA's announcements from www.oasa.gr's WordPress REST API (category 82), not by scraping the page. On the web it goes through a second allowlisted Worker route (`/oasa-web/*`) that rebuilds the request and keeps answers in Cloudflare's Cache API (5 min for the first page, 1 h otherwise, a day-old copy when oasa.gr is down). The Android app calls oasa.gr directly, as in decision 10. Bodies are shown in the app after DOMPurify (`shared/sanitizeHtml.ts`) with a link to the original. | The API has full, structured posts and is up to date, while the HTML page is served from a cache hours old. Parsing stays in the app (one code path for web and Android); the Worker only protects oasa.gr, whose API isn't cached and takes 1–2 s. Every announcement credits and links to oasa.gr. |
 | 12 | Main tabs: a bottom bar on phones (under 768px), tabs in the header on wider screens. It is one `<nav>` that CSS grid moves, with the tab list and "which tab is this page in" in `app/nav.ts`. The bar stays on detail pages (a route page belongs to Lines when opened from a timetable, otherwise Nearby) and hides while typing. Android's back button closes an open sheet, then goes back within a tab, then to Nearby from another tab, then sends the app to the background. | The bottom of the screen is in thumb reach and is where Android users expect tabs, and a fourth tab (Metro) doesn't fit next to the title on a 360px phone. On wide screens there is room in the header and the bottom bar would only take height. |
+| 13 | Metro: no live positions exist, so the Metro tab places trains by STASY's GTFS timetable. `scripts/build-metro.ts` turns the feed into `public/data/metro.json` (~40 KB gzipped: each day is a list of (stop pattern, start time) pairs, identical days shared), with line shapes from OpenStreetMap committed in `scripts/metro-shapes.json`. Positions and departures are worked out on the device (`domain/trainPositions.ts`) every 2 s on the map and 15 s on station pages. Estimates are always labelled as such: a ring marker unlike the bus arrows, “estimated from the timetable” on the map, “~4 min” and “scheduled, not live” on station pages. | No backend is needed and it works offline, the same on the web and in the Android app. This extends decision 9: derived data from a static timetable may be shown offline, as long as it never looks live. |
 
 ## Keeping data current
 
@@ -32,6 +33,11 @@ This document records the main decisions for the app and the reasons behind them
   previous number of stops, so a bad night at OASA can't empty the map. Run it locally with
   `npm run build:stops`.
 - The service worker serves the saved stops file first and fetches the new one in the background.
+- **The metro timetable** is rebuilt nightly by `.github/workflows/update-metro.yml` (`scripts/build-metro.ts`,
+  a few seconds). STASY publishes a timetable a few times a year covering about six weeks, sometimes
+  after the previous one ends. The script never replaces a timetable with one that ends earlier, and
+  fails the job while the published one has ended. The app then uses the latest published day of the
+  same weekday and shows a notice (holidays are missed then).
 
 ## Layers
 
@@ -66,6 +72,23 @@ Data sources             oasa-telematics-api (live)  +  static JSON from GTFS
 
 Patterns such as the outbox, CQRS and event sourcing are deliberately not used: the app has no
 database and never writes data.
+
+## STASY metro data notes
+
+- Source: the "ΣΤΑ.ΣΥ. GTFS" resource of data.gov.gr's dataset 4e897a75-975a-4ce7-af65-f32ea01f93b9. The file was
+  renamed from `stasy_gtfs.zip` to `stasy_gtfs.rar` in October 2026 (it is still a zip), so the build
+  looks its URL up through the CKAN API (`package_show`). The September feed covered 16 Sep – 31 Oct 2026.
+- It has M1–M3 and tram lines T6/T7 (route_type 0), but no Proastiakos, no `shapes.txt`, no
+  `calendar.txt` (one service per date in `calendar_dates.txt`) and no `frequencies.txt`: every trip has
+  exact times with dwell at each station.
+- Stops are per platform without parent stations, and names are uppercase Greek abbreviations
+  (`Δ. ΠΛΑΚΕΝΤΙΑΣ`). `scripts/metro-stations.json` groups them into stations by name, with proper and
+  English names; a new name fails the build until it's added there. `ΣΥΝΔΕΣΗ ΠΡΟΑΣΤΙΑΚΟΥ` is the M3's
+  junction with the suburban line, not a station, and is left out.
+- Tram stops share some names with metro stations (Σύνταγμα), so stations are built only from stops
+  metro trips call at.
+- `trip_headsign` is unreliable (often the origin), so a train's destination is its trip's last stop.
+- Saturday nights run through the night on M2 and M3 (times past 29:00).
 
 ## OASA data notes
 
