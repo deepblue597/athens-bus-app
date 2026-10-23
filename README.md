@@ -123,6 +123,8 @@ Or open `android/` in Android Studio and press Run.
 - [x] **P6b:** Metro tab: M1–M3 on a map with timetable-estimated train positions, next trains at each station
 - [x] **P6c:** Rail tab: the tram (T6, T7) next to the metro, with changes between them
 - [ ] **P6d:** metro stations on the Nearby map, metro disruptions from the News tab, the Proastiakos (no open data yet)
+- [ ] **P7a:** more than one city: a data source per city behind one interface, a city picker in the header, Athens unchanged (default city, same URLs) and no visible change for its users
+- [ ] **P7b:** Heraklion beta through CityBus, the platform of ~24 Greek cities: stops, live arrivals marked live or scheduled with incoming buses on the stop map, lines, timetables, route maps; all calls through the Worker. Waiting on e-analysis (CityBus) for permission; see [CityBus notes](docs/architecture.md#citybus-notes-heraklion-p7b)
 
 ## License
 

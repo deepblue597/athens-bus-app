@@ -98,6 +98,36 @@ database and never writes data.
 - `trip_headsign` is unreliable (often the origin), so a train's destination is its trip's last stop.
 - Saturday nights run through the night on M2 and M3 (times past 29:00).
 
+## CityBus notes (Heraklion, P7b)
+
+Research for P7b (October 2026), before any code. Nothing here is built yet.
+
+- Heraklion's urban buses (Αστικό ΚΤΕΛ Ηρακλείου, info@astiko-irakleiou.gr) run on CityBus by
+  e-analysis (https://e-analysis.eu), which serves ~24 Greek cities from one API,
+  `https://rest.citybus.gr/api/v1/{lang}/{agency}/…`. Heraklion is agency `110`. The open-source
+  app [astiko](https://github.com/uw0s/astiko) documents the endpoints: `stops`, `lines`, `routes`,
+  `routes/{code}/sequence`, `stops/live/{stop}`, `trips/stop/{stop}/day/{0-6}`, `{agency}/lines/{code}/points`.
+- Every request needs `Authorization: Bearer <JWT>`. There is no key or sign-up: the token is in
+  the city's public page (`irakleio.citybus.gr`, `const token = '…'`), lasts ~48 h and isn't tied to
+  a city. Without it the API answers 401. We have asked e-analysis for permission; until they answer,
+  using the page's token is a grey area, so P7b ships as a beta with an off switch.
+- CORS allows only CityBus's own sites, so the website can't call it: all calls go through the
+  Worker, which keeps the token, caches (stops, lines, routes 24 h; live arrivals 15 s per stop),
+  sends an identifying User-Agent and can switch Heraklion off. The Android app uses the Worker
+  too, so no release is needed to fix or stop it. Whether CityBus refuses connections from outside
+  Greece (as OASA does) is untested.
+- Tests on 23 Oct 2026 (Friday ~13:40): 533 stops (with coordinates and lines, no nearby endpoint),
+  26 lines, 98 routes, responses in ≤0.25 s. `stops/live` returns 404 when no bus is coming. At the
+  15 busiest stops, 23 of 51 buses had GPS: those already on their trip (median 4 min away). The
+  other 28, with `"0"`/`"0"` coordinates, were mostly trips not yet started (median 21.5 min), so
+  timetable estimates: arrivals should say live or scheduled. There is no per-line vehicle
+  endpoint, so live buses appear on stop pages only.
+- A line's `points` is ~900 KB (every point with an id and 15-digit coordinates): simplify and
+  cache it in the Worker.
+- Heraklion has an official app (Android `gr.citybus.urbantransit.irakleio`, also on iOS) by the
+  same company, rated 2.6 from 62 ratings and last updated 30 Nov 2023. It sells tickets, which
+  we would leave to it.
+
 ## OASA data notes
 
 - GTFS `stop_id` is the API's `StopCode`; GTFS `stop_code` is the API's `StopID` (the number on the sign).
