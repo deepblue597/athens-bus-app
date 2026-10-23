@@ -1,9 +1,9 @@
 # Athens Bus
 
 A web app for Athens buses: nearby stops, live arrivals, line timetables, a map of stops and OASA's
-service announcements, plus the metro lines with train positions estimated from STASY's timetable. It uses the public [OASA telematics API](https://telematics.oasa.gr) through
+service announcements, plus the metro and tram lines with positions estimated from STASY's timetable. It uses the public [OASA telematics API](https://telematics.oasa.gr) through
 [oasa-telematics-api](https://github.com/deepblue597/oasa-telematics-api), and the
-[announcements on oasa.gr](https://www.oasa.gr/ανακοινώσεις/). Metro timetables come from
+[announcements on oasa.gr](https://www.oasa.gr/ανακοινώσεις/). Metro and tram timetables come from
 [STASY's GTFS feed on data.gov.gr](https://data.gov.gr/dataset/dromologia-statheron-sygkoinonion-metro-isap-tram).
 
 > Work in progress. See the [roadmap](#roadmap).
@@ -25,7 +25,7 @@ npm run dev        # http://localhost:5173
 | `npm run typecheck` | Type-check the project |
 | `npm run build` | Type-check and build for production into `dist/` |
 | `npm run build:stops` | Rebuild `public/data/stops.json` from the live API (must run from Greece: OASA blocks other countries) |
-| `npm run build:metro` | Rebuild `public/data/metro.json` from STASY's timetable on data.gov.gr |
+| `npm run build:metro` | Rebuild `public/data/metro.json` (metro and tram) from STASY's timetable on data.gov.gr |
 | `npm run test:live` | Run the smoke tests against the real OASA API |
 
 ## How it works
@@ -44,7 +44,7 @@ src/
   app/        Providers, router, layout, offline status
   domain/     The app's own types and logic (Stop, Arrival, search, time...)
   data/       Stops file, favourites; data/oasa/: OASA client and adapters; data/oasaWeb/: announcements
-  features/   One folder per feature: nearby, stop, line, route, map, favourites, news, metro
+  features/   One folder per feature: nearby, stop, line, route, map, favourites, news, metro (the Rail tab)
 ```
 
 ## Deployment
@@ -121,7 +121,8 @@ Or open `android/` in Android Studio and press Run.
 - [x] **P5:** News tab with OASA's service announcements
 - [x] **P6a:** bottom tab bar on phones
 - [x] **P6b:** Metro tab: M1–M3 on a map with timetable-estimated train positions, next trains at each station
-- [ ] **P6c:** metro stations on the Nearby map, metro disruptions from the News tab, the tram
+- [x] **P6c:** Rail tab: the tram (T6, T7) next to the metro, with changes between them
+- [ ] **P6d:** metro stations on the Nearby map, metro disruptions from the News tab, the Proastiakos (no open data yet)
 
 ## License
 
@@ -129,7 +130,7 @@ MIT. See [LICENSE](LICENSE).
 
 ## Data
 
-Bus data and announcements © OASA (each announcement links to the original on oasa.gr). Metro
-timetables © STASY, published on [data.gov.gr](https://data.gov.gr/dataset/dromologia-statheron-sygkoinonion-metro-isap-tram)
+Bus data and announcements © OASA (each announcement links to the original on oasa.gr). Metro and
+tram timetables © STASY, published on [data.gov.gr](https://data.gov.gr/dataset/dromologia-statheron-sygkoinonion-metro-isap-tram)
 (the dataset states no licence; Greek public-sector open data is reusable under law 4727/2020). Metro
-line shapes © OpenStreetMap contributors (ODbL). Map tiles by [OpenFreeMap](https://openfreemap.org), map data © OpenStreetMap contributors.
+and tram line shapes © OpenStreetMap contributors (ODbL). Map tiles by [OpenFreeMap](https://openfreemap.org), map data © OpenStreetMap contributors.

@@ -1,6 +1,6 @@
-name: Update metro timetable
+name: Update metro and tram timetable
 
-# Rebuilds public/data/metro.json from STASY's GTFS feed on data.gov.gr. STASY publishes a new
+# Rebuilds public/data/metro.json (metro and tram) from STASY's GTFS feed on data.gov.gr. STASY publishes a new
 # timetable a few times a year, often late, so this checks nightly and commits only when the data
 # changed; the push triggers a redeploy through Cloudflare Workers Builds' Git integration. Pushes
 # made with GITHUB_TOKEN don't start other workflows, so this can't loop.
@@ -34,12 +34,12 @@ jobs:
       - name: Commit if the timetable changed
         run: |
           if [ -z "$(git status --porcelain -- public/data/metro.json)" ]; then
-            echo "Metro timetable unchanged"
+            echo "Metro and tram timetable unchanged"
           else
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add public/data/metro.json
-            git commit -m "Update the metro timetable from STASY's feed"
+            git commit -m "Update the metro and tram timetable from STASY's feed"
             # Someone may have pushed meanwhile: replay this commit on top and retry
             pushed=false
             for attempt in 1 2 3; do

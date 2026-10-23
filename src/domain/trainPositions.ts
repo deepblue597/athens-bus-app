@@ -1,8 +1,8 @@
-import type { Departure, DepartureGroup, MetroNetwork, MetroPattern, TrainEstimate } from './metro'
+import type { Departure, DepartureGroup, MetroLine, MetroNetwork, MetroPattern, TrainEstimate } from './metro'
 import { pointAlong } from './polyline'
 import { athensDate, athensTimeToEpoch } from './time'
 
-// The metro has no live positions, so trains are placed by STASY's timetable: a trip's times at each
+// The metro and tram have no live positions, so trains are placed by STASY's timetable: a trip's times at each
 // station say where it should be now. Trains run to headways and drift by a minute or two, so this
 // gets the number and spacing of trains right more than any one train's exact place.
 
@@ -90,6 +90,7 @@ function locate(network: MetroNetwork, pattern: MetroPattern, elapsed: number): 
     return null
   }
   const line = network.lines[pattern.line]
+  const track = line.tracks[pattern.track]
   const destination = stations[last]
   for (let k = 0; k <= last; k++) {
     const arrival = times[2 * k]
@@ -114,7 +115,7 @@ function locate(network: MetroNetwork, pattern: MetroPattern, elapsed: number): 
       to = stations[k]
       atStation = false
     }
-    const [lng, lat] = pointAlong(line.path, line.cumulative, along)
+    const [lng, lat] = pointAlong(track.path, track.cumulative, along)
     return { line: line.index, lng, lat, from, to, atStation, destination }
   }
   return null
@@ -145,15 +146,14 @@ export function nextDepartures(network: MetroNetwork, station: number, nowMs: nu
       if (time < nowMs - JUST_LEFT_MS) {
         continue
       }
-      const line = network.lines[pattern.line]
-      const forward = pattern.metres[k + 1] > pattern.metres[k]
-      const groupKey = `${line.index}:${forward ? 1 : -1}`
+      // Grouped by the end of the line trains head for: a tram line's two directions run on two tracks
+      const groupKey = `${pattern.line}:${pattern.towards}`
       let group = groups.get(groupKey)
       if (!group) {
-        group = { line: line.index, towards: forward ? line.stations[line.stations.length - 1] : line.stations[0], departures: [] }
+        group = { line: pattern.line, towards: pattern.towards, departures: [] }
         groups.set(groupKey, group)
       }
-      const departure: Departure = { key: `${date}:${i / 2}`, line: line.index, destination: pattern.stations[pattern.stations.length - 1], time }
+      const departure: Departure = { key: `${date}:${i / 2}`, line: pattern.line, destination: pattern.stations[pattern.stations.length - 1], time }
       group.departures.push(departure)
     }
   }
@@ -177,4 +177,14 @@ export function timetableNotice(network: MetroNetwork, nowMs: number): Timetable
     return null
   }
   return { firstDate: network.firstDate, lastDate: network.lastDate, standIn: choice.standIn }
+}
+
+/**
+ * The one end trains leave a stop towards, for a stop along the way served in one direction only
+ * (T7's loop through Piraeus); null elsewhere, termini included.
+ */
+export function oneWayTowards(line: MetroLine, station: number): number | null {
+  const ends = line.departsTowards.get(station) ?? []
+  const terminus = station === line.stations[0] || station === line.stations[line.stations.length - 1]
+  return ends.length === 1 && !terminus ? ends[0] : null
 }

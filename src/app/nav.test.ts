@@ -12,10 +12,10 @@ describe('activeSection', () => {
     expect(activeSection('/line/1151', null)).toBe('lines')
   })
 
-  it('puts the metro map and stations under Metro', () => {
-    expect(activeSection('/metro', null)).toBe('metro')
-    expect(activeSection('/metro/station/syntagma', null)).toBe('metro')
-    expect(activeSection('/metros', null)).toBeNull()
+  it('puts the rail map and stations under Rail', () => {
+    expect(activeSection('/rail', null)).toBe('rail')
+    expect(activeSection('/rail/station/syntagma', null)).toBe('rail')
+    expect(activeSection('/rails', null)).toBeNull()
   })
 
   it('puts announcements under News', () => {
@@ -46,8 +46,8 @@ describe('isTabPage', () => {
     expect(isTabPage('/')).toBe(true)
     expect(isTabPage('/lines')).toBe(true)
     expect(isTabPage('/news')).toBe(true)
-    expect(isTabPage('/metro')).toBe(true)
-    expect(isTabPage('/metro/station/syntagma')).toBe(false)
+    expect(isTabPage('/rail')).toBe(true)
+    expect(isTabPage('/rail/station/syntagma')).toBe(false)
     expect(isTabPage('/news/1')).toBe(false)
     expect(isTabPage('/stop/1')).toBe(false)
     expect(isTabPage('/app')).toBe(false)
@@ -58,7 +58,7 @@ describe('sectionPath', () => {
   it('gives each tab its page', () => {
     expect(sectionPath('nearby')).toBe('/')
     expect(sectionPath('lines')).toBe('/lines')
-    expect(sectionPath('metro')).toBe('/metro')
+    expect(sectionPath('rail')).toBe('/rail')
     expect(sectionPath('news')).toBe('/news')
   })
 })

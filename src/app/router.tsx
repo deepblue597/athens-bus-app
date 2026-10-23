@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router'
+import { createBrowserRouter, Navigate } from 'react-router'
 import { Layout } from './Layout'
 import { NearbyPage } from '../features/nearby/NearbyPage'
 import { StopPage } from '../features/stop/StopPage'
@@ -10,6 +10,7 @@ import { NewsPage } from '../features/news/NewsPage'
 import { AnnouncementPage } from '../features/news/AnnouncementPage'
 import { MetroPage } from '../features/metro/MetroPage'
 import { MetroStationPage } from '../features/metro/MetroStationPage'
+import { OldStationLink } from '../features/metro/OldStationLink'
 
 // The URL holds what is on screen, so links can be shared and the back button works
 export const router = createBrowserRouter([
@@ -22,11 +23,15 @@ export const router = createBrowserRouter([
       // LineCode, not the line number: several variants share a number (e.g. three lines are "Α7")
       { path: 'line/:lineCode', element: <LinePage /> },
       { path: 'route/:routeCode', element: <RoutePage /> },
-      { path: 'metro', element: <MetroPage /> },
-      { path: 'metro/station/:stationId', element: <MetroStationPage /> },
+      { path: 'rail', element: <MetroPage /> },
+      { path: 'rail/station/:stationId', element: <MetroStationPage /> },
+      // The tab was "Metro" before the tram joined it: old links and bookmarks still work
+      { path: 'metro', element: <Navigate to="/rail" replace /> },
+      { path: 'metro/station/:stationId', element: <OldStationLink /> },
       { path: 'news', element: <NewsPage /> },
       { path: 'news/:id', element: <AnnouncementPage /> },
       { path: 'app', element: <AppPage /> },
     ],
   },
 ])
+
