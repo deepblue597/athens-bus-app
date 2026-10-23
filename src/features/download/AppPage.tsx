@@ -2,11 +2,14 @@ import { Link } from 'react-router'
 import { CERT_SHA256, LATEST_APK_URL, SOURCE_URL, useLatestRelease } from './release'
 import './AppPage.css'
 
+// Taken in the Android app (1080 × 2400, saved at 720 × 1600)
 const SCREENSHOTS = [
   { file: 'nearby', caption: 'Stops near you' },
   { file: 'arrivals', caption: 'Live arrivals' },
-  { file: 'buses', caption: 'Your bus on the map' },
+  { file: 'buses', caption: 'Live buses on the map' },
   { file: 'timetable', caption: 'Timetables' },
+  { file: 'rail', caption: 'Metro and tram' },
+  { file: 'station', caption: 'Next trains and trams' },
 ]
 
 export function AppPage() {
@@ -20,7 +23,8 @@ export function AppPage() {
         <img src="/pwa-192.png" alt="" width="72" height="72" className="app-hero-icon" />
         <h1>Athens Bus for Android</h1>
         <p className="app-hero-lead">
-          Nearby stops, live arrivals, timetables and live bus positions for Athens. Free, no ads, no account.
+          Nearby stops, live arrivals, timetables and live bus positions for Athens, plus the metro and tram. Free, no
+          ads, no account.
         </p>
         <a className="download-button" href={LATEST_APK_URL}>
           Download for Android
@@ -42,7 +46,7 @@ export function AppPage() {
           {SCREENSHOTS.map((s) => (
             <li key={s.file}>
               <figure>
-                <img src={`/app/screenshot-${s.file}.jpg`} alt={s.caption} width="390" height="780" loading="lazy" />
+                <img src={`/app/screenshot-${s.file}.jpg`} alt={s.caption} width="360" height="800" loading="lazy" />
                 <figcaption>{s.caption}</figcaption>
               </figure>
             </li>
@@ -64,6 +68,10 @@ export function AppPage() {
           </li>
           <li>
             <strong>Timetables</strong> for every line: today, weekdays and weekends
+          </li>
+          <li>
+            <strong>Metro and tram</strong> on a map, with positions estimated from STASY’s timetable, and the next
+            departures at every station
           </li>
           <li>
             <strong>Favourite stops</strong> and line search in Greek or English
