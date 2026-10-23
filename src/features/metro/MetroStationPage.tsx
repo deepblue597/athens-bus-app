@@ -1,13 +1,16 @@
 import { useMemo } from 'react'
 import { Link, useParams } from 'react-router'
-import type { Departure } from '../../domain/metro'
-import { nextDepartures } from '../../domain/trainPositions'
+import { distanceInMeters, formatDistance } from '../../domain/geo'
+import type { Departure, MetroNetwork, MetroStation } from '../../domain/metro'
+import { nextDepartures, oneWayTowards } from '../../domain/trainPositions'
 import { useNow } from '../../shared/useNow'
 import { MetroCredit, MetroLineBadge, TimetableNotice } from './MetroParts'
 import { useMetroNetwork } from './useMetroNetwork'
 import './Metro.css'
 
 const REFRESH_MS = 15_000
+/** Tram stops and metro stations this close are worth changing between (Ακτή Ποσειδώνος – Πειραιάς is 360 m) */
+const CHANGE_WITHIN_M = 400
 
 const timeFormat = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Athens' })
 
@@ -21,26 +24,28 @@ export function MetroStationPage() {
     [network, station, now],
   )
 
-  const title = station?.name ?? 'Metro station'
+  const nearby = useMemo(() => (network && station ? changeNearby(network, station) : []), [network, station])
+
+  const title = station?.name ?? 'Station'
 
   return (
     <section className="metro-station-page">
-      <title>{`${title} · Metro · Athens Bus`}</title>
+      <title>{`${title} · Rail · Athens Bus`}</title>
 
-      <Link to="/metro" className="metro-back">
-        <span aria-hidden="true">←</span> Metro
+      <Link to="/rail" className="metro-back">
+        <span aria-hidden="true">←</span> Rail
       </Link>
 
-      {isPending && <p className="metro-message">Loading the metro timetable…</p>}
+      {isPending && <p className="metro-message">Loading the timetable…</p>}
       {isError && (
         <p className="metro-message">
-          Couldn’t load the metro timetable.{' '}
+          Couldn’t load the timetable.{' '}
           <button type="button" className="link-button" onClick={() => refetch()}>
             Try again
           </button>
         </p>
       )}
-      {network && !station && <p className="metro-message">There’s no metro station “{stationId}”.</p>}
+      {network && !station && <p className="metro-message">There’s no station “{stationId}”.</p>}
 
       {network && station && (
         <>
@@ -57,7 +62,21 @@ export function MetroStationPage() {
           <p className="metro-scheduled">Scheduled departures from STASY’s timetable, not live.</p>
           <TimetableNotice network={network} now={now} />
 
-          {groups.length === 0 && <p className="metro-message">No trains are scheduled from this station.</p>}
+          {station.lines.map((l) => {
+            const towards = oneWayTowards(network.lines[l], station.index)
+            return (
+              towards !== null && (
+                <p key={l} className="metro-scheduled">
+                  {network.lines[l].id} stops here only towards {network.stations[towards].name}; the other way it takes
+                  another street.
+                </p>
+              )
+            )
+          })}
+
+          {groups.length === 0 && (
+            <p className="metro-message">No {station.mode === 'tram' ? 'trams' : 'trains'} are scheduled from here.</p>
+          )}
 
           {groups.map((group) => {
             const line = network.lines[group.line]
@@ -88,11 +107,40 @@ export function MetroStationPage() {
             )
           })}
 
+          {nearby.length > 0 && (
+            <section className="metro-nearby" aria-labelledby="change-nearby">
+              <h2 id="change-nearby">{station.mode === 'tram' ? 'Metro nearby' : 'Tram nearby'}</h2>
+              <ul>
+                {nearby.map(({ other, metres }) => (
+                  <li key={other.id}>
+                    <Link to={`/rail/station/${other.id}`}>
+                      {other.lines.map((l) => (
+                        <MetroLineBadge key={l} line={network.lines[l]} />
+                      ))}
+                      <span className="metro-nearby-name">{other.name}</span>
+                      <span className="metro-nearby-distance">{formatDistance(metres)}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           <MetroCredit />
         </>
       )}
     </section>
   )
+}
+
+/** The other mode's stations within walking distance, closest first */
+function changeNearby(network: MetroNetwork, station: MetroStation): { other: MetroStation; metres: number }[] {
+  return network.stations
+    .filter((s) => s.mode !== station.mode)
+    .map((other) => ({ other, metres: distanceInMeters(station, other) }))
+    .filter((n) => n.metres <= CHANGE_WITHIN_M)
+    .sort((a, b) => a.metres - b.metres)
+    .slice(0, 3)
 }
 
 /** "~4 min": trains run to headways and drift from the timetable, so whole minutes at best */

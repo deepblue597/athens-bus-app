@@ -1,11 +1,11 @@
-// Builds public/data/metro.json: metro lines M1–M3, their stations and every trip in STASY's GTFS feed
-// (from data.gov.gr), for the Metro tab's timetable-based train positions and departures.
+// Builds public/data/metro.json: metro lines M1–M3, tram lines T6 and T7, their stations and every trip
+// in STASY's GTFS feed (from data.gov.gr), for the Rail tab's timetable-based train positions and departures.
 // Runs nightly in .github/workflows/update-metro.yml; locally: `npm run build:metro`.
 // METRO_FEED=path/to/feed.zip uses a downloaded feed instead.
 // Uses only Node built-ins, so it runs without `npm install`.
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import { inflateRawSync } from 'node:zlib'
-import type { MetroFile } from '../src/domain/metroFile.ts'
+import { METRO_FILE_VERSION, type MetroFile } from '../src/domain/metroFile.ts'
 import type { LngLat } from '../src/domain/polyline.ts'
 import { toMetroFile, type GtfsFiles, type StationTable } from './metroData.ts'
 
@@ -15,6 +15,7 @@ const GTFS_RESOURCE = '5e3858ee-d9ba-48c2-9015-744ea160976d'
 const OUTPUT = new URL('../public/data/metro.json', import.meta.url)
 const SHAPES = new URL('./metro-shapes.json', import.meta.url)
 const STATIONS = new URL('./metro-stations.json', import.meta.url)
+const TRAM_STOPS = new URL('./tram-stops.json', import.meta.url)
 const USER_AGENT = 'athens-bus-app metro builder (+https://github.com/deepblue597/athens-bus-app)'
 const TIMEOUT_MS = 120_000
 
@@ -32,10 +33,8 @@ async function main() {
     }),
   ) as unknown as GtfsFiles
 
-  const shapes = JSON.parse(await readFile(SHAPES, 'utf8')) as Record<string, LngLat[]>
-  const stationTable = JSON.parse(await readFile(STATIONS, 'utf8')) as StationTable & { _comment?: unknown }
-  delete stationTable._comment
-  const file = toMetroFile(gtfs, shapes, stationTable)
+  const shapes = JSON.parse(await readFile(SHAPES, 'utf8')) as Record<string, LngLat[][]>
+  const file = toMetroFile(gtfs, shapes, { metro: await readTable(STATIONS), tram: await readTable(TRAM_STOPS) })
 
   // STASY sometimes uploads late: never replace a timetable with one that ends earlier
   const previous = await readPrevious()
@@ -121,10 +120,17 @@ function unzip(zip: Buffer): Map<string, Buffer> {
 /** Files may sit in a folder inside the archive */
 const baseName = (path: string) => path.slice(path.lastIndexOf('/') + 1)
 
+async function readTable(url: URL): Promise<StationTable> {
+  const table = JSON.parse(await readFile(url, 'utf8')) as StationTable & { _comment?: unknown }
+  delete table._comment
+  return table
+}
+
+/** The current file, unless it's in an older format (then the new one replaces it whatever its dates) */
 async function readPrevious(): Promise<MetroFile | null> {
   try {
     const file = JSON.parse(await readFile(OUTPUT, 'utf8')) as MetroFile
-    return file?.version === 1 ? file : null
+    return file?.version === METRO_FILE_VERSION ? file : null
   } catch {
     return null
   }

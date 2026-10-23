@@ -63,10 +63,11 @@ export default defineConfig(({ mode }) => ({
             options: { cacheName: 'stops-file', expiration: { maxEntries: 1 } },
           },
           {
-            // The metro timetable, rebuilt when STASY publishes a new one
+            // The metro and tram timetable, rebuilt when STASY publishes a new one. A new cache name
+            // whenever the file's format changes, so an old copy isn't served to a newer app
             urlPattern: ({ url }) => url.pathname === '/data/metro.json',
             handler: 'StaleWhileRevalidate',
-            options: { cacheName: 'metro-file', expiration: { maxEntries: 1 } },
+            options: { cacheName: 'metro-file-v2', expiration: { maxEntries: 1 } },
           },
           {
             // Tile URLs include the map data version, so a cached tile never changes

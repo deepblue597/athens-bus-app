@@ -1,16 +1,38 @@
 // Pure parts of the metro build (scripts/build-metro.ts, scripts/fetch-metro-shapes.ts), kept apart so they can be tested
-import type { MetroFile, MetroFileLine, MetroFilePattern, MetroFileStation } from '../src/domain/metroFile.ts'
-import { cumulativeLengths, projectOnto, segmentLength, type LngLat } from '../src/domain/polyline.ts'
+import {
+  METRO_FILE_VERSION,
+  type MetroFile,
+  type MetroFileLine,
+  type MetroFilePattern,
+  type MetroFileStation,
+  type MetroMode,
+} from '../src/domain/metroFile.ts'
+import { cumulativeLengths, pointAlong, projectOnto, segmentLength, type LngLat } from '../src/domain/polyline.ts'
 
-/** Line colours from OpenStreetMap's route relations (STASY's own maps use the same green, red and blue) */
-export const METRO_LINES = [
-  { id: 'M1', color: '#007a33' },
-  { id: 'M2', color: '#da291c' },
-  { id: 'M3', color: '#10069f' },
-] as const
+/**
+ * The lines shown, by the feed's route_short_name. Metro colours are OpenStreetMap's (STASY's own maps
+ * use the same green, red and blue). OSM gives both tram lines the tram's light green, too light for
+ * white text and the same for both, so they get a teal and an orange-brown, unlike M1's green beside T7.
+ */
+export const METRO_LINES: readonly { id: string; mode: MetroMode; color: string }[] = [
+  { id: 'M1', mode: 'metro', color: '#007a33' },
+  { id: 'M2', mode: 'metro', color: '#da291c' },
+  { id: 'M3', mode: 'metro', color: '#10069f' },
+  { id: 'T6', mode: 'tram', color: '#00796b' },
+  { id: 'T7', mode: 'tram', color: '#b05a00' },
+]
 
-/** Feed stop name → [id, name, English name], or null for a stop that isn't a passenger station */
-export type StationTable = Record<string, [string, string, string] | null>
+/**
+ * Feed stop name → [id, name, English name], or null for a stop that isn't a passenger station. A
+ * fourth item, [lat, lng], replaces a position the feed has wrong.
+ */
+export type StationTable = Record<string, [string, string, string] | [string, string, string, [number, number]] | null>
+
+/** One table per mode: a tram stop and a metro station can share a name (Σύνταγμα) but not a place */
+export type StationTables = Record<MetroMode, StationTable>
+
+/** A station further than this from a track isn't on it */
+const MAX_OFF_TRACK_M = 150
 
 /**
  * Calls `onRow` for each CSV row (header excluded) with its fields. Handles quoted fields, CRLF and a
@@ -135,9 +157,8 @@ interface TripStop {
   departure: number
 }
 
-/** Builds the metro file from STASY's GTFS feed, the line paths (scripts/metro-shapes.json) and the station table */
-export function toMetroFile(gtfs: GtfsFiles, shapes: Record<string, LngLat[]>, stationTable: StationTable): MetroFile {
-  // Lines: the feed's M1–M3 (it also has the tram, which isn't shown yet)
+/** Builds the metro file from STASY's GTFS feed, the line tracks (scripts/metro-shapes.json) and the station tables */
+export function toMetroFile(gtfs: GtfsFiles, shapes: Record<string, LngLat[][]>, tables: StationTables): MetroFile {
   const lineOfRoute = new Map<string, number>()
   readCsv(gtfs['routes.txt'], (f, col) => {
     const index = METRO_LINES.findIndex((l) => l.id === f[col('route_short_name')].trim())
@@ -145,48 +166,53 @@ export function toMetroFile(gtfs: GtfsFiles, shapes: Record<string, LngLat[]>, s
       lineOfRoute.set(f[col('route_id')], index)
     }
   })
-  for (const line of METRO_LINES) {
-    if (!shapes[line.id]) {
-      throw new Error(`No path for ${line.id} in metro-shapes.json`)
+  const tracks = METRO_LINES.map((line) => {
+    const paths = shapes[line.id]
+    if (!paths || paths.length === 0) {
+      throw new Error(`No tracks for ${line.id} in metro-shapes.json`)
     }
-  }
+    return paths.map((path) => ({ path, cumulative: cumulativeLengths(path) }))
+  })
 
   // Stations: the feed has a stop per platform, grouped here by name (interchanges included). Only
-  // stops metro trains call at count: the tram's stops share some names (Σύνταγμα) but not places.
+  // stops the lines' trips call at count, each looked up in its own mode's table.
   const stopRows = new Map<string, { name: string; point: LngLat }>()
   readCsv(gtfs['stops.txt'], (f, col) => {
     stopRows.set(f[col('stop_id')], { name: f[col('stop_name')].trim(), point: [Number(f[col('stop_lon')]), Number(f[col('stop_lat')])] })
   })
-  const stations: { id: string; name: string; nameEn: string; points: LngLat[] }[] = []
+  const stations: { id: string; mode: MetroMode; name: string; nameEn: string; points: LngLat[] }[] = []
   const stationIndexById = new Map<string, number>()
-  /** stop_id → station index, or null for a stop that isn't a passenger station */
+  /** "mode|stop_id" → station index, or null for a stop that isn't a passenger station */
   const stationOfStop = new Map<string, number | null>()
   const missing = new Set<string>()
-  const stationFor = (stopId: string): number | null | undefined => {
-    if (stationOfStop.has(stopId)) {
-      return stationOfStop.get(stopId)
+  const stationFor = (stopId: string, mode: MetroMode): number | null | undefined => {
+    const key = `${mode}|${stopId}`
+    if (stationOfStop.has(key)) {
+      return stationOfStop.get(key)
     }
     const stop = stopRows.get(stopId)
-    const entry = stop && stationTable[stop.name]
+    const entry = stop && tables[mode][stop.name]
     if (!stop || entry === undefined) {
-      missing.add(stop ? stop.name : `stop_id ${stopId} (not in stops.txt)`)
+      missing.add(stop ? `${stop.name} (${mode})` : `stop_id ${stopId} (not in stops.txt)`)
       return undefined
     }
     let index: number | null = null
     if (entry) {
-      const [id, name, nameEn] = entry
+      const [id, name, nameEn, fixed] = entry
       index = stationIndexById.get(id) ?? null
       if (index === null) {
-        index = stations.push({ id, name, nameEn, points: [] }) - 1
+        index = stations.push({ id, mode, name, nameEn, points: [] }) - 1
         stationIndexById.set(id, index)
+      } else if (stations[index].mode !== mode) {
+        throw new Error(`Station id "${id}" is used for both a metro station and a tram stop`)
       }
-      stations[index].points.push(stop.point)
+      stations[index].points.push(fixed ? [fixed[1], fixed[0]] : stop.point)
     }
-    stationOfStop.set(stopId, index)
+    stationOfStop.set(key, index)
     return index
   }
 
-  // Trips of the metro lines
+  // Trips of the lines shown
   const tripLine = new Map<string, number>()
   const tripService = new Map<string, string>()
   readCsv(gtfs['trips.txt'], (f, col) => {
@@ -199,10 +225,11 @@ export function toMetroFile(gtfs: GtfsFiles, shapes: Record<string, LngLat[]>, s
   const tripStops = new Map<string, TripStop[]>()
   readCsv(gtfs['stop_times.txt'], (f, col) => {
     const tripId = f[col('trip_id')]
-    if (!tripLine.has(tripId)) {
+    const line = tripLine.get(tripId)
+    if (line === undefined) {
       return
     }
-    const station = stationFor(f[col('stop_id')])
+    const station = stationFor(f[col('stop_id')], METRO_LINES[line].mode)
     if (station === undefined || station === null) {
       return
     }
@@ -219,14 +246,63 @@ export function toMetroFile(gtfs: GtfsFiles, shapes: Record<string, LngLat[]>, s
     })
   })
   if (missing.size > 0) {
-    throw new Error(`Stations missing from scripts/metro-stations.json: ${[...missing].join(', ')}`)
+    throw new Error(`Stops missing from scripts/metro-stations.json or tram-stops.json: ${[...missing].join(', ')}`)
+  }
+
+  // Station positions: the platforms' average
+  const positions: LngLat[] = stations.map((s) => [
+    s.points.reduce((sum, p) => sum + p[0], 0) / s.points.length,
+    s.points.reduce((sum, p) => sum + p[1], 0) / s.points.length,
+  ])
+  /** Where a station sits along a track, and how far off it */
+  const placeCache = new Map<string, { metres: number; off: number }>()
+  const place = (line: number, track: number, station: number) => {
+    const key = `${line}|${track}|${station}`
+    let placed = placeCache.get(key)
+    if (!placed) {
+      const { path, cumulative } = tracks[line][track]
+      const metres = projectOnto(path, cumulative, positions[station])
+      placed = { metres, off: segmentLength(pointAlong(path, cumulative, metres), positions[station]) }
+      placeCache.set(key, placed)
+    }
+    return placed
+  }
+  /**
+   * The track a stop sequence runs along: the first it follows forwards, else the first it follows
+   * backwards (a metro line's one track serves both directions). Every station must be on it.
+   */
+  const trackCache = new Map<string, number>()
+  const trackFor = (line: number, sequence: number[]): number => {
+    const key = `${line}|${sequence.join(',')}`
+    const cached = trackCache.get(key)
+    if (cached !== undefined) {
+      return cached
+    }
+    const runs = tracks[line].map((_, t) => {
+      const placed = sequence.map((s) => place(line, t, s))
+      if (placed.some((p) => p.off > MAX_OFF_TRACK_M)) {
+        return 0
+      }
+      const steps = placed.slice(1).map((p, i) => p.metres - placed[i].metres)
+      return steps.every((d) => d > 0) ? 1 : steps.every((d) => d < 0) ? -1 : 0
+    })
+    let track = runs.indexOf(1)
+    if (track < 0) {
+      track = runs.indexOf(-1)
+    }
+    if (track < 0) {
+      const name = (s: number) => stations[s].name
+      throw new Error(`A ${METRO_LINES[line].id} trip ${name(sequence[0])} → ${name(sequence[sequence.length - 1])} follows none of its tracks`)
+    }
+    trackCache.set(key, track)
+    return track
   }
 
   // Patterns: distinct (line, stations, timing) sequences; each trip is a pattern and a start time
   const patterns: MetroFilePattern[] = []
   const patternIndex = new Map<string, number>()
   const tripsByService = new Map<string, [number, number][]>()
-  const lineStations = METRO_LINES.map(() => new Set<number>())
+  const trackStations = tracks.map((lineTracks) => lineTracks.map(() => new Set<number>()))
   for (const [tripId, list] of tripStops) {
     list.sort((a, b) => a.sequence - b.sequence)
     if (list.length < 2) {
@@ -234,17 +310,15 @@ export function toMetroFile(gtfs: GtfsFiles, shapes: Record<string, LngLat[]>, s
     }
     const line = tripLine.get(tripId)!
     const start = list[0].arrival
-    const pattern: MetroFilePattern = {
-      line,
-      stations: list.map((s) => s.station),
-      times: list.flatMap((s) => [s.arrival - start, s.departure - start]),
-    }
-    const key = `${line}|${pattern.stations.join(',')}|${pattern.times.join(',')}`
+    const sequence = list.map((s) => s.station)
+    const times = list.flatMap((s) => [s.arrival - start, s.departure - start])
+    const key = `${line}|${sequence.join(',')}|${times.join(',')}`
     let index = patternIndex.get(key)
     if (index === undefined) {
-      index = patterns.push(pattern) - 1
+      const track = trackFor(line, sequence)
+      index = patterns.push({ line, track, stations: sequence, times }) - 1
       patternIndex.set(key, index)
-      pattern.stations.forEach((s) => lineStations[line].add(s))
+      sequence.forEach((s) => trackStations[line][track].add(s))
     }
     const service = tripService.get(tripId)!
     let trips = tripsByService.get(service)
@@ -255,7 +329,7 @@ export function toMetroFile(gtfs: GtfsFiles, shapes: Record<string, LngLat[]>, s
     trips.push([index, start])
   }
   if (patterns.length === 0) {
-    throw new Error('The feed has no metro trips')
+    throw new Error('The feed has no metro or tram trips')
   }
 
   // Days: each date's trips, with identical days sharing one plan
@@ -289,7 +363,7 @@ export function toMetroFile(gtfs: GtfsFiles, shapes: Record<string, LngLat[]>, s
   }
   const dates = Object.keys(days).sort()
   if (dates.length === 0) {
-    throw new Error('The feed has no service days with metro trips')
+    throw new Error('The feed has no service days with metro or tram trips')
   }
 
   // Stations sorted by id, so the file doesn't depend on the order of the feed's rows
@@ -299,27 +373,75 @@ export function toMetroFile(gtfs: GtfsFiles, shapes: Record<string, LngLat[]>, s
   for (const pattern of patterns) {
     pattern.stations = pattern.stations.map((s) => newIndex[s])
   }
-  const sortedLineStations = lineStations.map((set) => new Set([...set].map((s) => newIndex[s])))
-
-  // Station positions: the platforms' average, and where each station sits along its lines
-  const fileStations: MetroFileStation[] = order.map((i) => stations[i]).map((s) => {
-    const lng = s.points.reduce((sum, p) => sum + p[0], 0) / s.points.length
-    const lat = s.points.reduce((sum, p) => sum + p[1], 0) / s.points.length
-    return [s.id, s.name, s.nameEn, round(lat, 6), round(lng, 6)]
-  })
-  const lines: MetroFileLine[] = METRO_LINES.map((meta, index) => {
-    const path = shapes[meta.id]
-    const cumulative = cumulativeLengths(path)
-    const stops = [...sortedLineStations[index]]
-      .map((station): [number, number] => {
-        const [, , , lat, lng] = fileStations[station]
-        return [station, Math.round(projectOnto(path, cumulative, [lng, lat]))]
-      })
-      .sort((a, b) => a[1] - b[1])
-    return { id: meta.id, color: meta.color, path, stops }
+  const fileStations: MetroFileStation[] = order.map((i): MetroFileStation => {
+    const s = stations[i]
+    return [s.id, s.name, s.nameEn, round(positions[i][1], 6), round(positions[i][0], 6)]
   })
 
-  return { version: 1, firstDate: dates[0], lastDate: dates[dates.length - 1], lines, stations: fileStations, patterns, plans, days }
+  const lines: MetroFileLine[] = METRO_LINES.map((meta, line) => {
+    const lineTracks = tracks[line].map((track, t) => ({
+      path: track.path,
+      stops: [...trackStations[line][t]]
+        .map((s): [number, number] => [newIndex[s], Math.round(place(line, t, s).metres)])
+        .sort((a, b) => a[1] - b[1]),
+    }))
+    return {
+      id: meta.id,
+      mode: meta.mode,
+      color: meta.color,
+      stations: listOrder(patterns.filter((p) => p.line === line), lineTracks[0].stops),
+      tracks: lineTracks,
+    }
+  })
+
+  return { version: METRO_FILE_VERSION, firstDate: dates[0], lastDate: dates[dates.length - 1], lines, stations: fileStations, patterns, plans, days }
+}
+
+/**
+ * A line's stations as listed: its longest trips first (short trips can call at a stop out of the way,
+ * such as T7's turn at ΣΕΦ), starting with the first track's, read from that track's start.
+ */
+function listOrder(patterns: MetroFilePattern[], firstTrack: [number, number][]): number[] {
+  const metres = new Map(firstTrack)
+  const sequences = patterns
+    .map((p) => p.stations)
+    .sort((a, b) => b.length - a.length || Number(metres.has(b[0])) - Number(metres.has(a[0])))
+  const base = sequences.find((seq) => seq.every((s) => metres.has(s))) ?? sequences[0]
+  if (!base) {
+    return []
+  }
+  const forward = !metres.has(base[0]) || metres.get(base[0])! <= metres.get(base[base.length - 1])!
+  return mergeStationOrders([forward ? base : [...base].reverse(), ...sequences])
+}
+
+/**
+ * One list of a line's stations from several station orders: the first, with stations only in
+ * others (one-way stops) put in before the next station they share. An order running the other way
+ * (a tram line's return direction) is read backwards.
+ */
+export function mergeStationOrders(orders: number[][]): number[] {
+  const nonEmpty = orders.filter((o) => o.length > 0)
+  if (nonEmpty.length === 0) {
+    return []
+  }
+  const merged = [...nonEmpty[0]]
+  for (const order of nonEmpty.slice(1)) {
+    const shared = order.filter((s) => merged.includes(s)).map((s) => merged.indexOf(s))
+    const reversed = shared.length > 1 && shared[0] > shared[shared.length - 1]
+    const list = reversed ? [...order].reverse() : order
+    let pending: number[] = []
+    for (const s of list) {
+      const at = merged.indexOf(s)
+      if (at >= 0) {
+        merged.splice(at, 0, ...pending)
+        pending = []
+      } else {
+        pending.push(s)
+      }
+    }
+    merged.push(...pending)
+  }
+  return merged
 }
 
 function round(value: number, decimals: number): number {

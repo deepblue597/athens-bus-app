@@ -358,3 +358,56 @@
   font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
 }
+
+.metro-mode-heading {
+  margin: 0;
+  padding: 16px 16px 4px;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.metro-station-oneway {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.metro-nearby {
+  margin-top: 20px;
+}
+
+.metro-nearby h2 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.metro-nearby ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.metro-nearby a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.metro-nearby a:hover .metro-nearby-name,
+.metro-nearby a:focus-visible .metro-nearby-name {
+  text-decoration: underline;
+}
+
+.metro-nearby-distance {
+  margin-left: auto;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}

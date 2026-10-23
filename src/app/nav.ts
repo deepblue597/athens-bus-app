@@ -1,6 +1,6 @@
 // The app's main tabs and which one a page belongs to. Shared by the nav bar and Android's back button.
 
-export type Section = 'nearby' | 'lines' | 'metro' | 'news'
+export type Section = 'nearby' | 'lines' | 'rail' | 'news'
 
 export interface NavItem {
   section: Section
@@ -11,8 +11,8 @@ export interface NavItem {
 export const NAV: NavItem[] = [
   { section: 'nearby', to: '/', label: 'Nearby' },
   { section: 'lines', to: '/lines', label: 'Lines' },
-  // Metro lines, with train positions estimated from STASY's timetable
-  { section: 'metro', to: '/metro', label: 'Metro' },
+  // Metro and tram lines, with train positions estimated from STASY's timetable
+  { section: 'rail', to: '/rail', label: 'Rail' },
   // OASA's announcements (detours, closures, strikes)
   { section: 'news', to: '/news', label: 'News' },
 ]
@@ -29,8 +29,8 @@ export function activeSection(pathname: string, state: unknown): Section | null 
   if (pathname === '/lines' || pathname.startsWith('/line/')) {
     return 'lines'
   }
-  if (pathname === '/metro' || pathname.startsWith('/metro/')) {
-    return 'metro'
+  if (pathname === '/rail' || pathname.startsWith('/rail/')) {
+    return 'rail'
   }
   if (pathname === '/news' || pathname.startsWith('/news/')) {
     return 'news'

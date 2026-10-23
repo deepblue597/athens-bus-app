@@ -1,17 +1,31 @@
+import type { MetroMode } from './metroFile'
 import type { LngLat } from './polyline'
 
-export interface MetroLine {
-  index: number
-  /** "M1", "M2", "M3" */
-  id: string
-  color: string
+export type { MetroMode }
+
+export interface MetroTrack {
   path: LngLat[]
   /** Metres from the path's start to each of its points */
   cumulative: number[]
-  /** Station indexes in path order */
-  stations: number[]
   /** Station index → metres along the path */
   stationMetres: Map<number, number>
+  /** The stations at the path's two ends */
+  first: number
+  last: number
+}
+
+export interface MetroLine {
+  index: number
+  /** "M1" … "M3", "T6", "T7" */
+  id: string
+  mode: MetroMode
+  color: string
+  /** Station indexes as listed, from one end to the other */
+  stations: number[]
+  /** One track for a metro line; one per direction for a tram line */
+  tracks: MetroTrack[]
+  /** Station index → the line ends trains leave it towards (one, at a one-way stop or a terminus) */
+  departsTowards: Map<number, number[]>
 }
 
 export interface MetroStation {
@@ -20,6 +34,8 @@ export interface MetroStation {
   id: string
   name: string
   nameEn: string
+  /** A metro station or a tram stop */
+  mode: MetroMode
   lat: number
   lng: number
   /** Indexes of the lines calling here */
@@ -28,9 +44,13 @@ export interface MetroStation {
 
 export interface MetroPattern {
   line: number
+  /** Index into the line's tracks */
+  track: number
   stations: number[]
-  /** Metres along the line's path for each station */
+  /** Metres along the track's path for each station */
   metres: number[]
+  /** The end of the line this trip heads for (its own last stop may come before it) */
+  towards: number
   /** Seconds from the trip's start: [arrival, departure] at each station, flattened */
   times: number[]
 }

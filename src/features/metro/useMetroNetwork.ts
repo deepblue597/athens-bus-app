@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { ROUTES_STALE_MS } from '../../app/queryClient'
 import { fetchMetroNetwork } from '../../data/metroFile'
 
-/** The metro lines and STASY's timetable (~40 KB gzipped), rebuilt nightly */
+/** The metro and tram lines and STASY's timetable (~57 KB gzipped), rebuilt nightly */
 export function useMetroNetwork() {
   return useQuery({
     queryKey: ['metroNetwork'],

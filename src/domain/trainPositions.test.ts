@@ -1,28 +1,34 @@
 import { describe, expect, it } from 'vitest'
 import { fromMetroFile } from '../data/metroFile'
 import type { MetroFile } from './metroFile'
-import { addDays, estimateTrains, nextDepartures, planFor, serviceDayStart, timetableNotice } from './trainPositions'
+import { addDays, estimateTrains, nextDepartures, oneWayTowards, planFor, serviceDayStart, timetableNotice } from './trainPositions'
 import { athensTimeToEpoch } from './time'
 
 // One straight line of three stations, A (0 m) – B (~877 m) – C (~1,754 m), and two days of trips:
 //   pattern 0, A → C: leaves A at +0, B at 120–150 s, reaches C at 300 s
 //   pattern 1, C → A: the same timings the other way
 const file: MetroFile = {
-  version: 1,
+  version: 2,
   firstDate: '2026-10-21',
   lastDate: '2026-10-22',
   lines: [
     {
       id: 'M1',
+      mode: 'metro',
       color: '#007a33',
-      path: [
-        [23.73, 37.975],
-        [23.75, 37.975],
-      ],
-      stops: [
-        [0, 0],
-        [1, 877],
-        [2, 1754],
+      stations: [0, 1, 2],
+      tracks: [
+        {
+          path: [
+            [23.73, 37.975],
+            [23.75, 37.975],
+          ],
+          stops: [
+            [0, 0],
+            [1, 877],
+            [2, 1754],
+          ],
+        },
       ],
     },
   ],
@@ -32,8 +38,8 @@ const file: MetroFile = {
     ['c', 'Γ', 'C', 37.975, 23.75],
   ],
   patterns: [
-    { line: 0, stations: [0, 1, 2], times: [0, 0, 120, 150, 300, 300] },
-    { line: 0, stations: [2, 1, 0], times: [0, 0, 120, 150, 300, 300] },
+    { line: 0, track: 0, stations: [0, 1, 2], times: [0, 0, 120, 150, 300, 300] },
+    { line: 0, track: 0, stations: [2, 1, 0], times: [0, 0, 120, 150, 300, 300] },
   ],
   plans: [
     // Wednesday: 08:00 A→C, 08:10 C→A
@@ -160,5 +166,80 @@ describe('timetableNotice', () => {
       lastDate: '2026-10-22',
       standIn: '2026-10-21',
     })
+  })
+})
+
+describe('a tram line with a track per direction', () => {
+  // A (0 m) → B → C along the south track; back C → D → A along the north one, D being a one-way stop
+  const tram: MetroFile = {
+    ...file,
+    lines: [
+      {
+        id: 'T7',
+        mode: 'tram',
+        color: '#b05a00',
+        stations: [0, 1, 3, 2],
+        tracks: [
+          {
+            path: [
+              [23.73, 37.975],
+              [23.75, 37.975],
+            ],
+            stops: [
+              [0, 0],
+              [1, 877],
+              [2, 1754],
+            ],
+          },
+          {
+            path: [
+              [23.75, 37.976],
+              [23.73, 37.976],
+            ],
+            stops: [
+              [2, 0],
+              [3, 877],
+              [0, 1754],
+            ],
+          },
+        ],
+      },
+    ],
+    stations: [...file.stations, ['d', 'Δ', 'D', 37.976, 23.74]],
+    patterns: [
+      { line: 0, track: 0, stations: [0, 1, 2], times: [0, 0, 120, 150, 300, 300] },
+      { line: 0, track: 1, stations: [2, 3, 0], times: [0, 0, 120, 150, 300, 300] },
+    ],
+  }
+  const net = fromMetroFile(tram)
+
+  it('runs each direction along its own track', () => {
+    // Wednesday 08:10 C → A: at D, on the north track, at 08:12:10
+    const [train] = estimateTrains(net, at('2026-10-21', 8, 12, 10))
+    expect(train).toMatchObject({ from: 3, atStation: true, destination: 0 })
+    expect(train.lat).toBeCloseTo(37.976, 5)
+    expect(train.lng).toBeCloseTo(23.74, 3)
+  })
+
+  it('groups departures by the end trains head for', () => {
+    const groups = nextDepartures(net, 0, at('2026-10-21', 7, 0))
+    expect(groups.map((g) => g.towards)).toEqual([2])
+    expect(nextDepartures(net, 2, at('2026-10-21', 7, 0)).map((g) => g.towards)).toEqual([0])
+  })
+
+  it('knows a one-way stop', () => {
+    const line = net.lines[0]
+    expect(line.departsTowards.get(3)).toEqual([0])
+    expect(oneWayTowards(line, 3)).toBe(0)
+    expect(oneWayTowards(line, 1)).toBe(2)
+    // Termini aren't one-way stops, though trains leave them one way
+    expect(oneWayTowards(line, 0)).toBeNull()
+    expect(net.stations[3].mode).toBe('tram')
+  })
+})
+
+describe('fromMetroFile', () => {
+  it('refuses a file in another format', () => {
+    expect(() => fromMetroFile({ ...file, version: 1 })).toThrow('Unsupported timetable format (1)')
   })
 })
