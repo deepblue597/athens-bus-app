@@ -4,6 +4,7 @@ import { estimateTrains, oneWayTowards } from '../../domain/trainPositions'
 import { useNow } from '../../shared/useNow'
 import { MetroMap } from './MetroMap'
 import { MetroCredit, MetroLineBadge, TimetableNotice } from './MetroParts'
+import { RailNewsList } from './RailNews'
 import { useMetroNetwork } from './useMetroNetwork'
 import './Metro.css'
 
@@ -13,6 +14,7 @@ const TRAIN_REFRESH_MS = 2_000
 const MODES = [
   { mode: 'metro', heading: 'Metro', stations: 'stations', vehicles: 'trains' },
   { mode: 'tram', heading: 'Tram', stations: 'stops', vehicles: 'trams' },
+  { mode: 'suburban', heading: 'Proastiakos', stations: 'stations', vehicles: 'trains' },
 ] as const
 
 export function MetroPage() {
@@ -30,11 +32,13 @@ export function MetroPage() {
         <div className="metro-intro">
           <h1 id="metro-heading">Rail</h1>
           <p>
-            Metro and tram positions are <strong>estimated from STASY’s timetable</strong>, not tracked live. Pick a
-            station for its next departures.
+            Train and tram positions are <strong>estimated from the timetables</strong>, not tracked live. Pick a
+            station for its next departures; Proastiakos stations also show OSE’s live departures.
           </p>
           {network && <TimetableNotice network={network} now={now} />}
         </div>
+
+        {network && <RailNewsList network={network} now={now} />}
 
         {isPending && <p className="metro-message">Loading the timetable…</p>}
         {isError && (

@@ -7,32 +7,50 @@ import {
   type MetroFileStation,
   type MetroMode,
 } from '../src/domain/metroFile.ts'
+import { isWeekendOrHoliday } from '../src/domain/holidays.ts'
 import { cumulativeLengths, pointAlong, projectOnto, segmentLength, type LngLat } from '../src/domain/polyline.ts'
+import { parseClock, type ProastiakosTimetable } from './proastiakosData.ts'
 
 /**
- * The lines shown, by the feed's route_short_name. Metro colours are OpenStreetMap's (STASY's own maps
- * use the same green, red and blue). OSM gives both tram lines the tram's light green, too light for
- * white text and the same for both, so they get a teal and an orange-brown, unlike M1's green beside T7.
+ * The lines shown, by the feed's route_short_name (the Proastiakos's by Hellenic Train's line names).
+ * Metro colours are OpenStreetMap's (STASY's own maps use the same green, red and blue). OSM gives
+ * both tram lines the tram's light green, too light for white text and the same for both, so they get
+ * a teal and an orange-brown, unlike M1's green beside T7. The Proastiakos keeps OSM's (Hellenic
+ * Train's) yellow, purple, light green and cyan, with dark text where white wouldn't read.
  */
-export const METRO_LINES: readonly { id: string; mode: MetroMode; color: string }[] = [
-  { id: 'M1', mode: 'metro', color: '#007a33' },
-  { id: 'M2', mode: 'metro', color: '#da291c' },
-  { id: 'M3', mode: 'metro', color: '#10069f' },
-  { id: 'T6', mode: 'tram', color: '#00796b' },
-  { id: 'T7', mode: 'tram', color: '#b05a00' },
+export const METRO_LINES: readonly { id: string; mode: MetroMode; color: string; textColor: string }[] = [
+  { id: 'M1', mode: 'metro', color: '#007a33', textColor: '#ffffff' },
+  { id: 'M2', mode: 'metro', color: '#da291c', textColor: '#ffffff' },
+  { id: 'M3', mode: 'metro', color: '#10069f', textColor: '#ffffff' },
+  { id: 'T6', mode: 'tram', color: '#00796b', textColor: '#ffffff' },
+  { id: 'T7', mode: 'tram', color: '#b05a00', textColor: '#ffffff' },
+  { id: 'A1', mode: 'suburban', color: '#ffcd00', textColor: '#1a1a1a' },
+  { id: 'A2', mode: 'suburban', color: '#9b26b6', textColor: '#ffffff' },
+  { id: 'A3', mode: 'suburban', color: '#78be20', textColor: '#1a1a1a' },
+  { id: 'A4', mode: 'suburban', color: '#00a3e0', textColor: '#1a1a1a' },
 ]
 
 /**
  * Feed stop name → [id, name, English name], or null for a stop that isn't a passenger station. A
- * fourth item, [lat, lng], replaces a position the feed has wrong.
+ * fourth item, [lat, lng], replaces a position the feed has wrong (and is the only position of a
+ * Proastiakos station); a fifth is a Proastiakos station's OSE departures board.
  */
-export type StationTable = Record<string, [string, string, string] | [string, string, string, [number, number]] | null>
+export type StationTable = Record<
+  string,
+  [string, string, string] | [string, string, string, [number, number]] | [string, string, string, [number, number], number] | null
+>
 
-/** One table per mode: a tram stop and a metro station can share a name (Σύνταγμα) but not a place */
-export type StationTables = Record<MetroMode, StationTable>
+/**
+ * One table per mode: a tram stop and a metro station can share a name (Σύνταγμα) but not a place.
+ * The Proastiakos's is only needed with its timetable.
+ */
+export type StationTables = Record<'metro' | 'tram', StationTable> & { suburban?: StationTable }
 
-/** A station further than this from a track isn't on it */
-const MAX_OFF_TRACK_M = 150
+/**
+ * A station further than this from a track isn't on it. Proastiakos stations can be large junctions:
+ * at ΣΚΑ the A2's platforms are ~300 m from the A3's, and the station sits between them.
+ */
+const MAX_OFF_TRACK_M: Record<MetroMode, number> = { metro: 150, tram: 150, suburban: 250 }
 
 /**
  * Calls `onRow` for each CSV row (header excluded) with its fields. Handles quoted fields, CRLF and a
@@ -157,16 +175,30 @@ interface TripStop {
   departure: number
 }
 
-/** Builds the metro file from STASY's GTFS feed, the line tracks (scripts/metro-shapes.json) and the station tables */
-export function toMetroFile(gtfs: GtfsFiles, shapes: Record<string, LngLat[][]>, tables: StationTables): MetroFile {
+/** Prefix of the made-up stop ids and trip ids the Proastiakos's trips get, beside the feed's */
+const PROASTIAKOS = 'proastiakos:'
+
+/**
+ * Builds the metro file from STASY's GTFS feed, the line tracks (scripts/metro-shapes.json) and the
+ * station tables, adding the Proastiakos when its timetable (scripts/proastiakos-timetable.json) is
+ * given. It has no dates, only weekday and weekend trips, so it runs on the dates STASY's covers.
+ */
+export function toMetroFile(
+  gtfs: GtfsFiles,
+  shapes: Record<string, LngLat[][]>,
+  tables: StationTables,
+  proastiakos?: ProastiakosTimetable,
+): MetroFile {
+  // The Proastiakos's lines come last, so the metro's and tram's keep their indexes
+  const shownLines = METRO_LINES.filter((l) => l.mode !== 'suburban' || proastiakos)
   const lineOfRoute = new Map<string, number>()
   readCsv(gtfs['routes.txt'], (f, col) => {
-    const index = METRO_LINES.findIndex((l) => l.id === f[col('route_short_name')].trim())
+    const index = shownLines.findIndex((l) => l.mode !== 'suburban' && l.id === f[col('route_short_name')].trim())
     if (index >= 0) {
       lineOfRoute.set(f[col('route_id')], index)
     }
   })
-  const tracks = METRO_LINES.map((line) => {
+  const tracks = shownLines.map((line) => {
     const paths = shapes[line.id]
     if (!paths || paths.length === 0) {
       throw new Error(`No tracks for ${line.id} in metro-shapes.json`)
@@ -185,28 +217,36 @@ export function toMetroFile(gtfs: GtfsFiles, shapes: Record<string, LngLat[][]>,
   /** "mode|stop_id" → station index, or null for a stop that isn't a passenger station */
   const stationOfStop = new Map<string, number | null>()
   const missing = new Set<string>()
+  /** Station index → its OSE departures board */
+  const boards = new Map<number, number>()
   const stationFor = (stopId: string, mode: MetroMode): number | null | undefined => {
     const key = `${mode}|${stopId}`
     if (stationOfStop.has(key)) {
       return stationOfStop.get(key)
     }
     const stop = stopRows.get(stopId)
-    const entry = stop && tables[mode][stop.name]
+    const entry = stop && tables[mode]?.[stop.name]
     if (!stop || entry === undefined) {
       missing.add(stop ? `${stop.name} (${mode})` : `stop_id ${stopId} (not in stops.txt)`)
       return undefined
     }
     let index: number | null = null
     if (entry) {
-      const [id, name, nameEn, fixed] = entry
+      const [id, name, nameEn, fixed, board] = entry
+      if (mode === 'suburban' && !fixed) {
+        throw new Error(`${stop.name} has no position in scripts/proastiakos-stations.json`)
+      }
       index = stationIndexById.get(id) ?? null
       if (index === null) {
         index = stations.push({ id, mode, name, nameEn, points: [] }) - 1
         stationIndexById.set(id, index)
       } else if (stations[index].mode !== mode) {
-        throw new Error(`Station id "${id}" is used for both a metro station and a tram stop`)
+        throw new Error(`Station id "${id}" is used for both a ${stations[index].mode} and a ${mode} station`)
       }
       stations[index].points.push(fixed ? [fixed[1], fixed[0]] : stop.point)
+      if (board !== undefined) {
+        boards.set(index, board)
+      }
     }
     stationOfStop.set(key, index)
     return index
@@ -229,7 +269,7 @@ export function toMetroFile(gtfs: GtfsFiles, shapes: Record<string, LngLat[][]>,
     if (line === undefined) {
       return
     }
-    const station = stationFor(f[col('stop_id')], METRO_LINES[line].mode)
+    const station = stationFor(f[col('stop_id')], shownLines[line].mode)
     if (station === undefined || station === null) {
       return
     }
@@ -245,8 +285,32 @@ export function toMetroFile(gtfs: GtfsFiles, shapes: Record<string, LngLat[][]>,
       departure: parseGtfsTime(f[col('departure_time')]),
     })
   })
+  // The Proastiakos's trips, with a made-up stop per station name (the table has every position)
+  for (const name of Object.keys(tables.suburban ?? {})) {
+    stopRows.set(PROASTIAKOS + name, { name, point: [0, 0] })
+  }
+  proastiakos?.trips.forEach((trip, n) => {
+    const line = shownLines.findIndex((l) => l.mode === 'suburban' && l.id === trip.line)
+    if (line < 0) {
+      throw new Error(`Unknown Proastiakos line ${trip.line}`)
+    }
+    const tripId = `${PROASTIAKOS}${n}`
+    tripLine.set(tripId, line)
+    tripService.set(tripId, PROASTIAKOS + trip.days)
+    const list: TripStop[] = []
+    trip.stops.forEach(([name, time], sequence) => {
+      const station = stationFor(PROASTIAKOS + name, 'suburban')
+      if (station === undefined || station === null) {
+        missing.add(`${name} (suburban)`)
+        return
+      }
+      const seconds = parseClock(time)
+      list.push({ sequence, station, arrival: seconds, departure: seconds })
+    })
+    tripStops.set(tripId, list)
+  })
   if (missing.size > 0) {
-    throw new Error(`Stops missing from scripts/metro-stations.json or tram-stops.json: ${[...missing].join(', ')}`)
+    throw new Error(`Stops missing from the station tables in scripts/: ${[...missing].join(', ')}`)
   }
 
   // Station positions: the platforms' average
@@ -280,7 +344,7 @@ export function toMetroFile(gtfs: GtfsFiles, shapes: Record<string, LngLat[][]>,
     }
     const runs = tracks[line].map((_, t) => {
       const placed = sequence.map((s) => place(line, t, s))
-      if (placed.some((p) => p.off > MAX_OFF_TRACK_M)) {
+      if (placed.some((p) => p.off > MAX_OFF_TRACK_M[shownLines[line].mode])) {
         return 0
       }
       const steps = placed.slice(1).map((p, i) => p.metres - placed[i].metres)
@@ -292,7 +356,7 @@ export function toMetroFile(gtfs: GtfsFiles, shapes: Record<string, LngLat[][]>,
     }
     if (track < 0) {
       const name = (s: number) => stations[s].name
-      throw new Error(`A ${METRO_LINES[line].id} trip ${name(sequence[0])} → ${name(sequence[sequence.length - 1])} follows none of its tracks`)
+      throw new Error(`A ${shownLines[line].id} trip ${name(sequence[0])} → ${name(sequence[sequence.length - 1])} follows none of its tracks`)
     }
     trackCache.set(key, track)
     return track
@@ -341,6 +405,11 @@ export function toMetroFile(gtfs: GtfsFiles, shapes: Record<string, LngLat[][]>,
     const date = isoDate(f[col('date')].trim())
     servicesByDate.set(date, [...(servicesByDate.get(date) ?? []), f[col('service_id')].trim()])
   })
+  if (proastiakos) {
+    for (const [date, services] of servicesByDate) {
+      services.push(PROASTIAKOS + 'daily', PROASTIAKOS + (isWeekendOrHoliday(date) ? 'weekends' : 'weekdays'))
+    }
+  }
   const plans: number[][] = []
   const planIndex = new Map<string, number>()
   const days: Record<string, number> = {}
@@ -375,10 +444,12 @@ export function toMetroFile(gtfs: GtfsFiles, shapes: Record<string, LngLat[][]>,
   }
   const fileStations: MetroFileStation[] = order.map((i): MetroFileStation => {
     const s = stations[i]
-    return [s.id, s.name, s.nameEn, round(positions[i][1], 6), round(positions[i][0], 6)]
+    const station: MetroFileStation = [s.id, s.name, s.nameEn, round(positions[i][1], 6), round(positions[i][0], 6)]
+    const board = boards.get(i)
+    return board === undefined ? station : [...station, board]
   })
 
-  const lines: MetroFileLine[] = METRO_LINES.map((meta, line) => {
+  const lines: MetroFileLine[] = shownLines.map((meta, line) => {
     const lineTracks = tracks[line].map((track, t) => ({
       path: track.path,
       stops: [...trackStations[line][t]]
@@ -389,6 +460,7 @@ export function toMetroFile(gtfs: GtfsFiles, shapes: Record<string, LngLat[][]>,
       id: meta.id,
       mode: meta.mode,
       color: meta.color,
+      textColor: meta.textColor,
       stations: listOrder(patterns.filter((p) => p.line === line), lineTracks[0].stops),
       tracks: lineTracks,
     }

@@ -3,7 +3,8 @@ import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // OASA doesn't send CORS headers on most endpoints, so /oasa/* is proxied to it. /oasa-web/* is
-// www.oasa.gr's announcements, proxied (and cached) in production by worker/oasaWebProxy.ts.
+// www.oasa.gr's announcements, proxied (and cached) in production by worker/oasaWebProxy.ts, and
+// /ose/screens/{board} a Proastiakos station's live board (worker/oseProxy.ts).
 // The trailing slashes matter: a plain '/oasa' would also catch /oasa-web
 const oasaProxy = {
   '/oasa/': {
@@ -16,6 +17,11 @@ const oasaProxy = {
     changeOrigin: true,
     rewrite: (path: string) => path.replace(/^\/oasa-web/, ''),
   },
+  '/ose/': {
+    target: 'https://ose.mpass.ltd',
+    changeOrigin: true,
+    rewrite: (path: string) => path.replace(/^\/ose\/screens\/(\d+)$/, '/api/v1/screens/$1/data/multilingual'),
+  },
 }
 
 const DAY_SECONDS = 24 * 60 * 60
@@ -24,7 +30,7 @@ const DAY_SECONDS = 24 * 60 * 60
 export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
-    // Installable app with an offline shell. The service worker doesn't touch /oasa: live data is
+    // Installable app with an offline shell. The service worker doesn't touch /oasa or /ose: live data is
     // never cached, and timetables/routes are kept by TanStack Query's persister (app/queryClient.ts).
     VitePWA({
       // The Android app (vite build --mode android) has its files on the phone already
@@ -54,7 +60,7 @@ export default defineConfig(({ mode }) => ({
         globPatterns: ['**/*.{js,mjs,css,html,svg,png}'],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/oasa\//, /^\/oasa-web\//, /^\/data\//],
+        navigateFallbackDenylist: [/^\/oasa\//, /^\/oasa-web\//, /^\/ose\//, /^\/data\//],
         runtimeCaching: [
           {
             // Rebuilt nightly: show the saved copy at once and fetch the new one in the background
@@ -67,7 +73,7 @@ export default defineConfig(({ mode }) => ({
             // whenever the file's format changes, so an old copy isn't served to a newer app
             urlPattern: ({ url }) => url.pathname === '/data/metro.json',
             handler: 'StaleWhileRevalidate',
-            options: { cacheName: 'metro-file-v2', expiration: { maxEntries: 1 } },
+            options: { cacheName: 'metro-file-v3', expiration: { maxEntries: 1 } },
           },
           {
             // Tile URLs include the map data version, so a cached tile never changes

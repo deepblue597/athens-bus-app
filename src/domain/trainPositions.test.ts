@@ -8,7 +8,7 @@ import { athensTimeToEpoch } from './time'
 //   pattern 0, A → C: leaves A at +0, B at 120–150 s, reaches C at 300 s
 //   pattern 1, C → A: the same timings the other way
 const file: MetroFile = {
-  version: 2,
+  version: 3,
   firstDate: '2026-10-21',
   lastDate: '2026-10-22',
   lines: [
@@ -16,6 +16,7 @@ const file: MetroFile = {
       id: 'M1',
       mode: 'metro',
       color: '#007a33',
+      textColor: '#ffffff',
       stations: [0, 1, 2],
       tracks: [
         {
@@ -178,6 +179,7 @@ describe('a tram line with a track per direction', () => {
         id: 'T7',
         mode: 'tram',
         color: '#b05a00',
+        textColor: '#ffffff',
         stations: [0, 1, 3, 2],
         tracks: [
           {
@@ -240,6 +242,12 @@ describe('a tram line with a track per direction', () => {
 
 describe('fromMetroFile', () => {
   it('refuses a file in another format', () => {
-    expect(() => fromMetroFile({ ...file, version: 1 })).toThrow('Unsupported timetable format (1)')
+    expect(() => fromMetroFile({ ...file, version: 2 })).toThrow('Unsupported timetable format (2)')
+  })
+
+  it('reads a Proastiakos station’s OSE board', () => {
+    const withBoard = fromMetroFile({ ...file, stations: [['a', 'Α', 'A', 37.975, 23.73, 18], ...file.stations.slice(1)] })
+    expect(withBoard.stations[0].board).toBe(18)
+    expect(withBoard.stations[1].board).toBeNull()
   })
 })

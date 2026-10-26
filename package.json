@@ -14,6 +14,7 @@
     "preview": "vite preview",
     "build:stops": "node scripts/build-stops.ts",
     "build:metro": "node scripts/build-metro.ts",
+    "convert:proastiakos": "node scripts/convert-proastiakos.ts",
     "build:android": "tsc -b && vite build --mode android && cap sync android",
     "build:android:release": "npm run build:android && cd android && ./gradlew assembleRelease"
   },
