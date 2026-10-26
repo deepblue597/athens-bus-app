@@ -33,6 +33,7 @@ export function fromMetroFile(data: unknown): MetroNetwork {
     id: l.id,
     mode: l.mode,
     color: l.color,
+    textColor: l.textColor,
     stations: l.stations,
     tracks: l.tracks.map(
       (t): MetroTrack => ({
@@ -45,9 +46,9 @@ export function fromMetroFile(data: unknown): MetroNetwork {
     ),
     departsTowards: new Map(),
   }))
-  const stations: MetroStation[] = file.stations.map(([id, name, nameEn, lat, lng], index) => {
+  const stations: MetroStation[] = file.stations.map(([id, name, nameEn, lat, lng, board], index) => {
     const at = lines.filter((l) => l.stations.includes(index))
-    return { index, id, name, nameEn, mode: at[0]?.mode ?? 'metro', lat, lng, lines: at.map((l) => l.index) }
+    return { index, id, name, nameEn, mode: at[0]?.mode ?? 'metro', lat, lng, lines: at.map((l) => l.index), board: board ?? null }
   })
   const patterns: MetroPattern[] = file.patterns.map((p) => {
     const track = lines[p.line].tracks[p.track]

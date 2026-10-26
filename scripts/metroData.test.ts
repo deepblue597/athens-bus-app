@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { LngLat } from '../src/domain/polyline.ts'
 import { mergeStationOrders, parseGtfsTime, readCsv, stitchWays, toMetroFile, type GtfsFiles, type StationTables } from './metroData.ts'
+import type { ProastiakosTimetable } from './proastiakosData.ts'
 
 describe('readCsv', () => {
   it('reads quoted fields, CRLF and a byte-order mark', () => {
@@ -218,12 +219,101 @@ describe('toMetroFile', () => {
 
   it('fails on a station missing from the table', () => {
     const withNew = { ...gtfs, 'stops.txt': gtfs['stops.txt'].replace('5,ΓΑΜΜΑ', '5,ΔΕΛΤΑ') }
-    expect(() => toMetroFile(withNew, shapes, tables)).toThrow('Stops missing from scripts/metro-stations.json or tram-stops.json: ΔΕΛΤΑ (metro)')
+    expect(() => toMetroFile(withNew, shapes, tables)).toThrow('Stops missing from the station tables in scripts/: ΔΕΛΤΑ (metro)')
   })
 
   it('fails on a trip that follows none of its line’s tracks', () => {
     const far = { ...tables, tram: { ...tables.tram, ΖΗΤΑ: ['tram-zita', 'Ζήτα', 'Zita', [38.2, 23.91]] as [string, string, string, [number, number]] } }
     expect(() => toMetroFile(gtfs, shapes, far)).toThrow('A T7 trip Έψιλον → Βήτα follows none of its tracks')
+  })
+})
+
+describe('toMetroFile with the Proastiakos', () => {
+  const line = (lat: number): LngLat[][] => [
+    [
+      [23.6, lat],
+      [23.62, lat],
+    ],
+  ]
+  const shapes: Record<string, LngLat[][]> = {
+    M1: line(37.95),
+    M2: line(37.96),
+    M3: line(37.97),
+    T6: line(37.98),
+    T7: line(37.99),
+    A1: line(38.0),
+    A2: line(38.01),
+    A3: line(38.02),
+    A4: line(38.03),
+  }
+  const tables: StationTables = {
+    metro: { ΑΛΦΑ: ['alfa', 'Άλφα', 'Alfa'], ΒΗΤΑ: ['vita', 'Βήτα', 'Vita'] },
+    tram: {},
+    suburban: {
+      Πειραιάς: ['proastiakos-peiraias', 'Πειραιάς', 'Piraeus', [38.0, 23.6], 2],
+      'Άγ. Ανάργυροι': ['proastiakos-agioi-anargyroi', 'Άγιοι Ανάργυροι', 'Agioi Anargyroi', [38.0, 23.61], 428],
+      Ρουφ: ['proastiakos-rouf', 'Ρουφ', 'Rouf', [38.0, 23.62], 24],
+    },
+  }
+  const gtfs: GtfsFiles = {
+    'routes.txt': 'route_id,route_short_name\n4,M1\n',
+    'stops.txt': 'stop_id,stop_name,stop_lat,stop_lon\n1,ΑΛΦΑ,37.95,23.60\n2,ΒΗΤΑ,37.95,23.62\n',
+    'trips.txt': 'route_id,service_id,trip_id\n4,A,t1\n',
+    'stop_times.txt': 'trip_id,arrival_time,departure_time,stop_id,stop_sequence\nt1,06:00:00,06:00:00,1,1\nt1,06:05:00,06:05:00,2,2\n',
+    // A Wednesday, a Saturday and Ohi Day (a Wednesday holiday)
+    'calendar_dates.txt': 'service_id,date,exception_type\nA,20261021,1\nA,20261024,1\nA,20261028,1\n',
+  }
+  const timetable: ProastiakosTimetable = {
+    page: 'https://www.hellenictrain.gr/proastiakes-grammes-athinas/',
+    pdfs: [],
+    trips: [
+      { line: 'A1', train: '1202', days: 'daily', stops: [['Πειραιάς', '5:43'], ['Άγ. Ανάργυροι', '5:48'], ['Ρουφ', '5:52']] },
+      { line: 'A1', train: '3204', days: 'weekdays', stops: [['Ρουφ', '5:05'], ['Πειραιάς', '5:15']] },
+      { line: 'A1', train: '4202', days: 'weekends', stops: [['Πειραιάς', '24:10'], ['Ρουφ', '24:20']] },
+    ],
+  }
+  const file = toMetroFile(gtfs, shapes, tables, timetable)
+  const trainsOn = (date: string) => {
+    const plan = file.plans[file.days[date]]
+    const out: string[] = []
+    for (let i = 0; i < plan.length; i += 2) {
+      const pattern = file.patterns[plan[i]]
+      if (file.lines[pattern.line].mode === 'suburban') {
+        out.push(`${file.stations[pattern.stations[0]][0]}@${plan[i + 1] / 60}`)
+      }
+    }
+    return out
+  }
+
+  it('adds the lines after the metro and tram, with their text colour', () => {
+    expect(file.lines.map((l) => l.id)).toEqual(['M1', 'M2', 'M3', 'T6', 'T7', 'A1', 'A2', 'A3', 'A4'])
+    expect(file.lines[5]).toMatchObject({ mode: 'suburban', textColor: '#1a1a1a' })
+    expect(file.lines[5].stations.map((s) => file.stations[s][0])).toEqual([
+      'proastiakos-peiraias',
+      'proastiakos-agioi-anargyroi',
+      'proastiakos-rouf',
+    ])
+  })
+
+  it('gives each station its position from the table and its OSE board', () => {
+    const peiraias = file.stations.find((s) => s[0] === 'proastiakos-peiraias')
+    expect(peiraias).toEqual(['proastiakos-peiraias', 'Πειραιάς', 'Piraeus', 38, 23.6, 2])
+    expect(file.stations.find((s) => s[0] === 'alfa')).toHaveLength(5)
+  })
+
+  it('runs weekday trains on weekdays and weekend trains at weekends and on holidays', () => {
+    expect(trainsOn('2026-10-21')).toEqual(['proastiakos-rouf@305', 'proastiakos-peiraias@343'])
+    expect(trainsOn('2026-10-24')).toEqual(['proastiakos-peiraias@343', 'proastiakos-peiraias@1450'])
+    expect(trainsOn('2026-10-28')).toEqual(trainsOn('2026-10-24'))
+  })
+
+  it('leaves the Proastiakos out without its timetable', () => {
+    expect(toMetroFile(gtfs, shapes, tables).lines.map((l) => l.id)).toEqual(['M1', 'M2', 'M3', 'T6', 'T7'])
+  })
+
+  it('fails on a station missing from the table', () => {
+    const unknown = { ...timetable, trips: [{ ...timetable.trips[0], stops: [['Πειραιάς', '5:43'], ['Κιάτο', '6:58']] as [string, string][] }] }
+    expect(() => toMetroFile(gtfs, shapes, tables, unknown)).toThrow('Κιάτο (suburban)')
   })
 })
 

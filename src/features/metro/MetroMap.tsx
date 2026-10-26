@@ -17,10 +17,15 @@ interface MetroMapProps {
 }
 
 const isTram: ExpressionSpecification = ['==', ['get', 'mode'], 'tram']
+const isSuburban: ExpressionSpecification = ['==', ['get', 'mode'], 'suburban']
+
+/** The Proastiakos first, so the metro is drawn on top where the M3 shares its tracks to the airport */
+const DRAW_ORDER = { suburban: 0, metro: 1, tram: 2 } as const
 
 /**
- * The metro and tram lines, stations and trains, the tram drawn thinner and smaller. Trains are GeoJSON circles updated with setData, not React
- * markers: some 60 of them move every couple of seconds, which markers would make heavy on phones.
+ * The metro, tram and Proastiakos lines, stations and trains, the tram drawn thinner and smaller.
+ * Trains are GeoJSON circles updated with setData, not React markers: some 80 of them move every
+ * couple of seconds, which markers would make heavy on phones.
  */
 export function MetroMap({ network, trains, onSelectStation }: MetroMapProps) {
   const [hovering, setHovering] = useState(false)
@@ -29,7 +34,7 @@ export function MetroMap({ network, trains, onSelectStation }: MetroMapProps) {
     () => ({
       type: 'FeatureCollection' as const,
       // A tram line has a track per direction: both are drawn, mostly on top of each other
-      features: network.lines.flatMap((l) =>
+      features: [...network.lines].sort((a, b) => DRAW_ORDER[a.mode] - DRAW_ORDER[b.mode]).flatMap((l) =>
         l.tracks.map((t) => ({
           type: 'Feature' as const,
           properties: { color: l.color, mode: l.mode },
@@ -89,8 +94,9 @@ export function MetroMap({ network, trains, onSelectStation }: MetroMapProps) {
           type="line"
           layout={{ 'line-join': 'round', 'line-cap': 'round' }}
           paint={{
-            'line-color': '#ffffff',
-            'line-width': ['interpolate', ['linear'], ['zoom'], 10, ['case', isTram, 3.5, 5], 15, ['case', isTram, 7, 11]],
+            // A dark edge for the Proastiakos's yellow and light green, which white wouldn't set off
+            'line-color': ['case', isSuburban, '#4a4a4a', '#ffffff'],
+            'line-width': ['interpolate', ['linear'], ['zoom'], 10, ['case', isTram, 3.5, isSuburban, 4, 5], 15, ['case', isTram, 7, isSuburban, 8, 11]],
           }}
         />
         <Layer
@@ -99,7 +105,7 @@ export function MetroMap({ network, trains, onSelectStation }: MetroMapProps) {
           layout={{ 'line-join': 'round', 'line-cap': 'round' }}
           paint={{
             'line-color': ['get', 'color'],
-            'line-width': ['interpolate', ['linear'], ['zoom'], 10, ['case', isTram, 1.75, 3], 15, ['case', isTram, 4, 7]],
+            'line-width': ['interpolate', ['linear'], ['zoom'], 10, ['case', isTram, 1.75, isSuburban, 2.5, 3], 15, ['case', isTram, 4, isSuburban, 5.5, 7]],
           }}
         />
       </Source>

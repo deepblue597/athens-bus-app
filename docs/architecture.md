@@ -18,7 +18,10 @@ This document records the main decisions for the app and the reasons behind them
 | 10 | Android app with Capacitor: the same build (`--mode android`, no service worker) in a native WebView; OASA calls go through Capacitor's native HTTP. | One codebase. Native HTTP has no CORS limits and runs from the phone, so the app doesn't depend on the proxy or on Cloudflare reaching OASA. |
 | 11 | The News tab reads OASA's announcements from www.oasa.gr's WordPress REST API (category 82), not by scraping the page. On the web it goes through a second allowlisted Worker route (`/oasa-web/*`) that rebuilds the request and keeps answers in Cloudflare's Cache API (5 min for the first page, 1 h otherwise, a day-old copy when oasa.gr is down). The Android app calls oasa.gr directly, as in decision 10. Bodies are shown in the app after DOMPurify (`shared/sanitizeHtml.ts`) with a link to the original. | The API has full, structured posts and is up to date, while the HTML page is served from a cache hours old. Parsing stays in the app (one code path for web and Android); the Worker only protects oasa.gr, whose API isn't cached and takes 1–2 s. Every announcement credits and links to oasa.gr. |
 | 12 | Main tabs: a bottom bar on phones (under 768px), tabs in the header on wider screens. It is one `<nav>` that CSS grid moves, with the tab list and "which tab is this page in" in `app/nav.ts`. The bar stays on detail pages (a route page belongs to Lines when opened from a timetable, otherwise Nearby) and hides while typing. Android's back button closes an open sheet, then goes back within a tab, then to Nearby from another tab, then sends the app to the background. | The bottom of the screen is in thumb reach and is where Android users expect tabs, and a fourth tab (Rail) doesn't fit next to the title on a 360px phone. On wide screens there is room in the header and the bottom bar would only take height. |
-| 13 | Metro and tram: no live positions exist (STASY publishes none, and Citymapper's tram times are scheduled too), so the Rail tab places trains and trams by STASY's GTFS timetable. `scripts/build-metro.ts` turns the feed into `public/data/metro.json` (~57 KB gzipped: each day is a list of (stop pattern, start time) pairs, identical days shared), with line tracks from OpenStreetMap committed in `scripts/metro-shapes.json`: one per metro line, one per direction for a tram line (T7 loops one way through Piraeus), each trip pattern placed on the track it follows. The Android app downloads the file from the site and falls back to its built-in copy, so it gets new timetables without a new release; the file has a `version`, and an app ignores a file in a format it can't read. Positions and departures are worked out on the device (`domain/trainPositions.ts`) every 2 s on the map and 15 s on station pages. Estimates are always labelled as such: a ring marker unlike the bus arrows, “estimated from the timetable” on the map, “~4 min” and “scheduled, not live” on station pages. | No backend is needed and it works offline, the same on the web and in the Android app. This extends decision 9: derived data from a static timetable may be shown offline, as long as it never looks live. |
+| 13 | Metro and tram: no live positions exist (STASY publishes none, and Citymapper's tram times are scheduled too), so the Rail tab places trains and trams by STASY's GTFS timetable. `scripts/build-metro.ts` turns the feed into `public/data/metro.json` (~67 KB gzipped with the Proastiakos: each day is a list of (stop pattern, start time) pairs, identical days shared), with line tracks from OpenStreetMap committed in `scripts/metro-shapes.json`: one per metro line, one per direction for a tram line (T7 loops one way through Piraeus), each trip pattern placed on the track it follows. The Android app downloads the file from the site and falls back to its built-in copy, so it gets new timetables without a new release; the file has a `version`, and an app ignores a file in a format it can't read. Positions and departures are worked out on the device (`domain/trainPositions.ts`) every 2 s on the map and 15 s on station pages. Estimates are always labelled as such: a ring marker unlike the bus arrows, “estimated from the timetable” on the map, “~4 min” and “scheduled, not live” on station pages. | No backend is needed and it works offline, the same on the web and in the Android app. This extends decision 9: derived data from a static timetable may be shown offline, as long as it never looks live. |
+| 14 | The Proastiakos (A1–A4) is a third mode in the same rail file, `"suburban"`. Its timetable comes from Hellenic Train's PDFs: `scripts/convert-proastiakos.ts` (run by hand, needs `pdftotext`) parses them into `scripts/proastiakos-timetable.json`, which is committed, and the nightly build adds its weekday, weekend and daily trips to every date STASY's timetable covers, with the weekend timetable on Greek public holidays (`domain/holidays.ts`). Station pages also show the station's live board from OSE (`ose.mpass.ltd`, the screens Hellenic Train's live page links to): train, destination, platform and delay, every 30 s, through `/ose/screens/{board}` on the web (`worker/oseProxy.ts`, 30 s edge cache) and directly in the Android app. The live board is never saved. | There is no GTFS or other open timetable for the Proastiakos (data.gov.gr and nap.gov.gr only have a 2020–21 spreadsheet). One file keeps the map, departures and offline use the same for every mode. OSE allows any origin and needs no key, so the Worker is there only so many viewers cost OSE one request per 30 s. Live departures are labelled as OSE's; the timetable below them stays labelled "scheduled, not live". |
+| 15 | Rail announcements come from the News tab's list: `domain/railNews.ts` picks OASA posts about rail service (station closed or reopened, "οι συρμοί", "until the metro closes", tram diversions), not bus detours that only name a station, and matches the stations named in the title word by word (declined and abbreviated names allowed, the whole name required). The Rail tab shows the last week's; a station page those naming it. OSE's own notices for a Proastiakos station come with its live board. | STASY's site locks its WordPress API ("REST API restricted to authenticated users") and has no feed, and Hellenic Train's feed is gone (410), so OASA's posts are the one open source; OASA does announce metro closures and replacement buses. Keyword rules are checked against 100 real posts. |
+| 16 | The Nearby tab shows rail stations: rings in their line's colour on the map (from zoom 11, names from 14) and the three closest within 1.2 km under the bus stops. | Changing between bus and rail is the common trip; a station is worth a longer walk than a bus stop. |
 
 ## Keeping data current
 
@@ -41,6 +44,13 @@ This document records the main decisions for the app and the reasons behind them
   copy, so it doesn't need a release for a new timetable. Changing the file's format means bumping
   `METRO_FILE_VERSION` and the service worker's `metro-file-v…` cache name; apps on the old format
   then keep using their built-in copy until they're updated.
+- **The Proastiakos timetable** changes a few times a year, when Hellenic Train uploads new PDFs to
+  its [lines page](https://www.hellenictrain.gr/proastiakes-grammes-athinas/). The nightly build reads
+  the committed `scripts/proastiakos-timetable.json`, and fails (after writing the file) when the page
+  links other PDFs than the ones it was converted from: then run `npm run convert:proastiakos`, check
+  the diff and commit. The converter fails on anything it can't read (a station missing from
+  `scripts/proastiakos-stations.json`, a footnote it doesn't know, a row with the wrong number of times)
+  rather than guess.
 
 ## Layers
 
@@ -97,6 +107,41 @@ database and never writes data.
 - A tram stop and a metro station within 400 m are shown as a change on each other's page.
 - `trip_headsign` is unreliable (often the origin), so a train's destination is its trip's last stop.
 - Saturday nights run through the night on M2 and M3 (times past 29:00).
+
+## Proastiakos data notes
+
+Research for P6d (October 2026).
+
+- **No open timetable.** data.gov.gr and nap.gov.gr have only "Information about rail transport in
+  Greece" (TRAINOSE, XLSX for 2020 and 2021). STASY's GTFS has the M3's junction with the
+  Proastiakos but no Proastiakos trains.
+- **Timetable PDFs.** Hellenic Train's page links one PDF per line (two for A2: Monday–Friday, and
+  weekends and holidays), made in Word, so `pdftotext -layout` gives clean tables. "..." or "…" means
+  the train doesn't run to that station, "|" that it passes without stopping; some times are written
+  `4.41`; long names wrap with their times on a line between the halves; a note above a table lists
+  trains that don't run at weekends ("Τα Δρομολόγια 3201 & 3204 ΔΕΝ κυκλοφορούν Σαββατοκύριακα") and
+  those trains are starred. The PDFs give one time per station. Trains leaving after midnight
+  (Χαλκίδα 0:00) belong to the previous service day.
+- Checked against the live boards (27 Oct 2026, 45 stations): 202 of 225 entries matched to the
+  minute, 10 were 1–4 minutes off (A3 around Οινόη, A4 around Μέγαρα), and 13 weren't Proastiakos
+  timetable trains: the 300 to Αίγιο, the M3's airport trains (6000s), and runs from Ρέντης depot that
+  the PDFs start at Ταύρος.
+- **Shapes and stations** come from OSM's route relations (A1 8467445, A2 8467443, A3 8467442, A4
+  8467515, one direction each, simplified at 10 m) and their stop positions. ΣΚΑ is a junction whose
+  A2 platforms are ~300 m from the A3's, so Proastiakos stations may sit up to 250 m from a track.
+- **Live boards.** `GET https://ose.mpass.ltd/api/v1/screens/{board}/data/multilingual`, no key,
+  `Access-Control-Allow-Origin: *`, `Cache-Control: no-store`. It is the backend of OSE's station
+  screens (`ose.mpass.ltd/#/routesInfos/{board}`, linked from Hellenic Train's live page; the older
+  `delays.osenet.gr/station/{board}/` shows the same and needs a session cookie, and its certificate
+  chain is incomplete). Board numbers are in `scripts/proastiakos-stations.json` (Αθήνα 1, Πειραιάς 2,
+  Αεροδρόμιο 28). Each board lists the next ~5 trains of any kind, each twice (`routesEl`,
+  `routesEn`): `TRENO` (train number, trailing space), `FROMTO`, `DR_PLATFORM` (`-` when not
+  announced), `DR_TAFIX` arrival and `DR_TANA` departure as `"  4:33"` (arrival null where a train
+  starts, departure null where it ends), `PREVIOUSDELAY9` minutes late (what the screens show), and
+  `DR_FORECASTED_DATE`, UTC within minutes of the time, the only date given. `announcements` are the
+  messages the screens scroll. OSE's own screens refresh every 60 s.
+- The boards are an undocumented service run for OSE: the app identifies itself, caches, and links
+  Hellenic Train's live page. If OSE asks, `/ose/*` can be switched off in the Worker.
 
 ## CityBus notes (Heraklion, P7b)
 

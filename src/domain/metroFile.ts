@@ -2,10 +2,11 @@
 // the script runs in Node, which needs explicit file extensions)
 
 /** Bump when the format changes: apps then ignore a file they can't read and use their built-in copy */
-export const METRO_FILE_VERSION = 2
+export const METRO_FILE_VERSION = 3
 
 /**
- * STASY's metro and tram network and its timetable, built from its GTFS feed. Each day's trips are
+ * The rail network and its timetable: STASY's metro and tram from its GTFS feed, and Hellenic Train's
+ * Proastiakos from its timetable PDFs (scripts/proastiakos-timetable.json). Each day's trips are
  * stored as (pattern, start time) pairs: a line has only a few dozen distinct stop sequences and
  * timings, and many days share the same timetable, so this keeps a month and a half of trips small.
  */
@@ -23,13 +24,16 @@ export interface MetroFile {
   days: Record<string, number>
 }
 
-export type MetroMode = 'metro' | 'tram'
+/** "suburban" is the Proastiakos, Hellenic Train's suburban railway */
+export type MetroMode = 'metro' | 'tram' | 'suburban'
 
 export interface MetroFileLine {
-  /** "M1" … "M3", "T6", "T7" */
+  /** "M1" … "M3", "T6", "T7", "A1" … "A4" */
   id: string
   mode: MetroMode
   color: string
+  /** Text on the line's colour: white, or dark on the Proastiakos's yellow, light green and cyan */
+  textColor: string
   /** The line's stations in list order, from one end to the other (one-way stops included) */
   stations: number[]
   /**
@@ -46,8 +50,11 @@ export interface MetroFileTrack {
   stops: [number, number][]
 }
 
-/** [id (used in URLs), name, English name, lat, lng] */
-export type MetroFileStation = [string, string, string, number, number]
+/**
+ * [id (used in URLs), name, English name, lat, lng], and for a Proastiakos station the number of its
+ * live departures board at OSE (ose.mpass.ltd)
+ */
+export type MetroFileStation = [string, string, string, number, number] | [string, string, string, number, number, number]
 
 export interface MetroFilePattern {
   /** Index into `lines` */

@@ -1,11 +1,13 @@
-name: Update metro and tram timetable
+name: Update rail timetable
 
-# Rebuilds public/data/metro.json (metro and tram) from STASY's GTFS feed on data.gov.gr. STASY publishes a new
+# Rebuilds public/data/metro.json (metro, tram and Proastiakos) from STASY's GTFS feed on data.gov.gr and the
+# committed Proastiakos timetable (scripts/proastiakos-timetable.json). STASY publishes a new
 # timetable a few times a year, often late, so this checks nightly and commits only when the data
 # changed; the push triggers a redeploy through Cloudflare Workers Builds' Git integration. Pushes
 # made with GITHUB_TOKEN don't start other workflows, so this can't loop.
 # The job fails (shows red) while the published timetable has ended; the app then uses the last
-# published week of the same weekday and says so.
+# published week of the same weekday and says so. It also fails when Hellenic Train's page links new
+# Proastiakos PDFs: run `npm run convert:proastiakos` and commit.
 on:
   schedule:
     - cron: '45 1 * * *' # 03:45/04:45 Athens time
@@ -34,12 +36,12 @@ jobs:
       - name: Commit if the timetable changed
         run: |
           if [ -z "$(git status --porcelain -- public/data/metro.json)" ]; then
-            echo "Metro and tram timetable unchanged"
+            echo "Rail timetable unchanged"
           else
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add public/data/metro.json
-            git commit -m "Update the metro and tram timetable from STASY's feed"
+            git commit -m "Update the rail timetable from STASY's feed"
             # Someone may have pushed meanwhile: replay this commit on top and retry
             pushed=false
             for attempt in 1 2 3; do
@@ -51,5 +53,5 @@ jobs:
       # An expired timetable is still written above; report the failure after committing
       - if: steps.build.outcome == 'failure'
         run: |
-          echo "::error::build-metro.ts failed (see the build step: an expired timetable or a feed problem)"
+          echo "::error::build-metro.ts failed (see the build step: an expired timetable, new Proastiakos PDFs or a feed problem)"
           exit 1

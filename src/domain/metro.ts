@@ -16,10 +16,12 @@ export interface MetroTrack {
 
 export interface MetroLine {
   index: number
-  /** "M1" … "M3", "T6", "T7" */
+  /** "M1" … "M3", "T6", "T7", and the Proastiakos's "A1" … "A4" */
   id: string
   mode: MetroMode
   color: string
+  /** For text on `color` */
+  textColor: string
   /** Station indexes as listed, from one end to the other */
   stations: number[]
   /** One track for a metro line; one per direction for a tram line */
@@ -34,12 +36,14 @@ export interface MetroStation {
   id: string
   name: string
   nameEn: string
-  /** A metro station or a tram stop */
+  /** A metro station, a tram stop or a Proastiakos station */
   mode: MetroMode
   lat: number
   lng: number
   /** Indexes of the lines calling here */
   lines: number[]
+  /** A Proastiakos station's live departures board at OSE */
+  board: number | null
 }
 
 export interface MetroPattern {
@@ -56,7 +60,7 @@ export interface MetroPattern {
 }
 
 export interface MetroNetwork {
-  /** First and last service date STASY's timetable covers, YYYY-MM-DD */
+  /** First and last service date STASY's timetable covers (the Proastiakos's runs on the same dates), YYYY-MM-DD */
   firstDate: string
   lastDate: string
   lines: MetroLine[]

@@ -10,7 +10,7 @@
     // Deep links such as /stop/60134 get index.html
     "not_found_handling": "single-page-application",
     // Everything else is served straight from the assets, without running the Worker
-    "run_worker_first": ["/oasa/*", "/oasa-web/*"]
+    "run_worker_first": ["/oasa/*", "/oasa-web/*", "/ose/*"]
   },
   // Not "smart" placement: the Worker must run where the request arrives (Athens for users in
   // Greece), because OASA only accepts connections from Greece

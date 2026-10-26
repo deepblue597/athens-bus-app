@@ -411,3 +411,118 @@
   font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
 }
+
+/* A Proastiakos station's live board (OSE) */
+.live-board {
+  margin-top: 16px;
+}
+
+.live-board-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.live-board h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.live-board-source {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.live-board .metro-notice {
+  margin: 8px 0 0;
+}
+
+.live-board-stale {
+  font-size: 0.875rem;
+}
+
+.live-delay {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.live-destination {
+  display: block;
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.live-train {
+  display: block;
+  font-size: 0.8125rem;
+}
+
+.metro-timetable-heading {
+  margin: 24px 0 0;
+  font-size: 1rem;
+}
+
+/* OASA's announcements about the metro and tram */
+.rail-news {
+  margin-top: 16px;
+}
+
+.metro-panel .rail-news {
+  margin: 0;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.rail-news h2 {
+  margin: 4px 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.rail-news ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rail-news-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 44px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border);
+  color: inherit;
+  text-decoration: none;
+}
+
+.rail-news li:last-child .rail-news-item {
+  border-bottom: 0;
+}
+
+.rail-news-item:hover .rail-news-title,
+.rail-news-item:focus-visible .rail-news-title {
+  text-decoration: underline;
+}
+
+.rail-news-date {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.rail-news-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}

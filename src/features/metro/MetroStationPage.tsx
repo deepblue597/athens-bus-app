@@ -4,13 +4,21 @@ import { distanceInMeters, formatDistance } from '../../domain/geo'
 import type { Departure, MetroNetwork, MetroStation } from '../../domain/metro'
 import { nextDepartures, oneWayTowards } from '../../domain/trainPositions'
 import { useNow } from '../../shared/useNow'
+import { LiveBoard } from './LiveBoard'
 import { MetroCredit, MetroLineBadge, TimetableNotice } from './MetroParts'
+import { RailNewsList } from './RailNews'
 import { useMetroNetwork } from './useMetroNetwork'
 import './Metro.css'
 
 const REFRESH_MS = 15_000
-/** Tram stops and metro stations this close are worth changing between (Ακτή Ποσειδώνος – Πειραιάς is 360 m) */
+/**
+ * Stations of another kind this close are worth changing between (tram Ακτή Ποσειδώνος – metro
+ * Πειραιάς is 360 m, metro Λαρίσης – Proastiakos Αθήνα ~150 m)
+ */
 const CHANGE_WITHIN_M = 400
+
+/** Whose timetable a station's scheduled departures come from */
+const TIMETABLE_SOURCE = { metro: 'STASY’s', tram: 'STASY’s', suburban: 'Hellenic Train’s' } as const
 
 const timeFormat = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Athens' })
 
@@ -59,7 +67,12 @@ export function MetroStationPage() {
             </p>
           </header>
 
-          <p className="metro-scheduled">Scheduled departures from STASY’s timetable, not live.</p>
+          {station.board !== null && <LiveBoard board={station.board} now={now} />}
+
+          <RailNewsList network={network} station={station} now={now} />
+
+          {station.board !== null && <h2 className="metro-timetable-heading">Timetable</h2>}
+          <p className="metro-scheduled">Scheduled departures from {TIMETABLE_SOURCE[station.mode]} timetable, not live.</p>
           <TimetableNotice network={network} now={now} />
 
           {station.lines.map((l) => {
@@ -109,7 +122,7 @@ export function MetroStationPage() {
 
           {nearby.length > 0 && (
             <section className="metro-nearby" aria-labelledby="change-nearby">
-              <h2 id="change-nearby">{station.mode === 'tram' ? 'Metro nearby' : 'Tram nearby'}</h2>
+              <h2 id="change-nearby">Change nearby</h2>
               <ul>
                 {nearby.map(({ other, metres }) => (
                   <li key={other.id}>
@@ -126,21 +139,21 @@ export function MetroStationPage() {
             </section>
           )}
 
-          <MetroCredit />
+          <MetroCredit modes={[station.mode]} />
         </>
       )}
     </section>
   )
 }
 
-/** The other mode's stations within walking distance, closest first */
+/** Other kinds of stations within walking distance (metro, tram, Proastiakos), closest first */
 function changeNearby(network: MetroNetwork, station: MetroStation): { other: MetroStation; metres: number }[] {
   return network.stations
     .filter((s) => s.mode !== station.mode)
     .map((other) => ({ other, metres: distanceInMeters(station, other) }))
     .filter((n) => n.metres <= CHANGE_WITHIN_M)
     .sort((a, b) => a.metres - b.metres)
-    .slice(0, 3)
+    .slice(0, 4)
 }
 
 /** "~4 min": trains run to headways and drift from the timetable, so whole minutes at best */

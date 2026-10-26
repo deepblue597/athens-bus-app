@@ -1,11 +1,14 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { Capacitor } from '@capacitor/core'
-import { StopsMap } from '../map/StopsMap'
+import { StopsMap, type RailMapStation } from '../map/StopsMap'
 import { useAllStops } from '../map/useAllStops'
 import { useFavourites } from '../favourites/useFavourites'
 import { AndroidAppBanner } from '../download/AndroidAppBanner'
+import { MetroLineBadge } from '../metro/MetroParts'
+import { useMetroNetwork } from '../metro/useMetroNetwork'
 import { ATHENS_CENTER, distanceInMeters, formatDistance, type LatLng } from '../../domain/geo'
+import { stationsNear } from '../../domain/railStations'
 import type { Stop } from '../../domain/types'
 import { useUserLocation } from './useUserLocation'
 import { MAX_NEARBY_METERS, useNearbyStops } from './useNearbyStops'
@@ -13,6 +16,9 @@ import './NearbyPage.css'
 
 /** How far the map must move before offering to search the new area */
 const SEARCH_AREA_MIN_METERS = 300
+/** Rail stations are worth a longer walk than a bus stop */
+const RAIL_NEARBY_METERS = 1200
+const RAIL_NEARBY_MAX = 3
 
 export function NearbyPage() {
   const navigate = useNavigate()
@@ -26,6 +32,15 @@ export function NearbyPage() {
   const stops = nearby.data?.stops ?? []
   const allStops = useAllStops()
   const { favourites } = useFavourites()
+  const { data: rail } = useMetroNetwork()
+  const railStations = useMemo<RailMapStation[]>(
+    () => (rail ? rail.stations.map((s) => ({ id: s.id, name: s.name, lat: s.lat, lng: s.lng, color: rail.lines[s.lines[0]]?.color ?? '#333333' })) : []),
+    [rail],
+  )
+  const nearbyStations = useMemo(
+    () => (rail && searchPoint ? stationsNear(rail, searchPoint, RAIL_NEARBY_METERS, RAIL_NEARBY_MAX) : []),
+    [rail, searchPoint],
+  )
 
   const canSearchArea =
     mapCenter !== null && searchPoint !== null && distanceInMeters(mapCenter, searchPoint) > SEARCH_AREA_MIN_METERS
@@ -113,6 +128,32 @@ export function NearbyPage() {
           ))}
         </ul>
 
+        {rail && nearbyStations.length > 0 && (
+          <section aria-labelledby="rail-nearby-heading">
+            <h2 id="rail-nearby-heading" className="nearby-section-title">
+              Rail stations nearby
+            </h2>
+            <ul className="stop-list">
+              {nearbyStations.map(({ station, metres }) => (
+                <li key={station.id}>
+                  <Link to={`/rail/station/${station.id}`} className="stop-list-item">
+                    <span className="stop-list-name">
+                      {station.name}
+                      <span className="stop-list-name-en">{station.nameEn}</span>
+                    </span>
+                    <span className="nearby-rail-lines">
+                      {station.lines.map((l) => (
+                        <MetroLineBadge key={l} line={rail.lines[l]} />
+                      ))}
+                    </span>
+                    <span className="stop-list-distance">{formatDistance(metres)}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         <p className="nearby-footer">
           Unofficial app, not affiliated with OASA. Bus data © OASA.
           {!Capacitor.isNativePlatform() && (
@@ -130,7 +171,9 @@ export function NearbyPage() {
           userLocation={userPoint}
           stops={stops}
           allStops={allStops.data}
+          railStations={railStations}
           onSelectStop={openStop}
+          onSelectRailStation={(id) => navigate(`/rail/station/${id}`)}
           onMoveEnd={setMapCenter}
         />
         {canSearchArea && (

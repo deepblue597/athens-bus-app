@@ -1,10 +1,12 @@
 # Athens Bus
 
 A web app for Athens buses: nearby stops, live arrivals, line timetables, a map of stops and OASA's
-service announcements, plus the metro and tram lines with positions estimated from STASY's timetable. It uses the public [OASA telematics API](https://telematics.oasa.gr) through
+service announcements, plus the metro, tram and Proastiakos (suburban railway) with positions estimated from their timetables and the Proastiakos's live departures. It uses the public [OASA telematics API](https://telematics.oasa.gr) through
 [oasa-telematics-api](https://github.com/deepblue597/oasa-telematics-api), and the
 [announcements on oasa.gr](https://www.oasa.gr/ανακοινώσεις/). Metro and tram timetables come from
-[STASY's GTFS feed on data.gov.gr](https://data.gov.gr/dataset/dromologia-statheron-sygkoinonion-metro-isap-tram).
+[STASY's GTFS feed on data.gov.gr](https://data.gov.gr/dataset/dromologia-statheron-sygkoinonion-metro-isap-tram),
+the Proastiakos timetable from [Hellenic Train's PDFs](https://www.hellenictrain.gr/proastiakes-grammes-athinas/)
+and its live departures from OSE's station screens.
 
 > Work in progress. See the [roadmap](#roadmap).
 
@@ -25,7 +27,8 @@ npm run dev        # http://localhost:5173
 | `npm run typecheck` | Type-check the project |
 | `npm run build` | Type-check and build for production into `dist/` |
 | `npm run build:stops` | Rebuild `public/data/stops.json` from the live API (must run from Greece: OASA blocks other countries) |
-| `npm run build:metro` | Rebuild `public/data/metro.json` (metro and tram) from STASY's timetable on data.gov.gr |
+| `npm run build:metro` | Rebuild `public/data/metro.json` (metro, tram and Proastiakos) from STASY's timetable on data.gov.gr and `scripts/proastiakos-timetable.json` |
+| `npm run convert:proastiakos` | Convert Hellenic Train's Proastiakos timetable PDFs into `scripts/proastiakos-timetable.json` (needs `pdftotext`, from poppler-utils) |
 | `npm run test:live` | Run the smoke tests against the real OASA API |
 
 ## How it works
@@ -39,11 +42,13 @@ installable and works offline with what you've looked at before. See
 
 ```
 scripts/      build-stops.ts: crawls the API into public/data/stops.json
-              build-metro.ts: STASY's GTFS feed into public/data/metro.json
+              build-metro.ts: STASY's GTFS feed and the Proastiakos timetable into public/data/metro.json
+              convert-proastiakos.ts: Hellenic Train's timetable PDFs into proastiakos-timetable.json
 src/
   app/        Providers, router, layout, offline status
   domain/     The app's own types and logic (Stop, Arrival, search, time...)
-  data/       Stops file, favourites; data/oasa/: OASA client and adapters; data/oasaWeb/: announcements
+  data/       Stops file, favourites; data/oasa/: OASA client and adapters; data/oasaWeb/: announcements;
+              data/ose/: the Proastiakos's live departure boards
   features/   One folder per feature: nearby, stop, line, route, map, favourites, news, metro (the Rail tab)
 ```
 
@@ -56,7 +61,8 @@ the app makes and lets Cloudflare's edge cache
 answers for a few seconds (arrivals, bus positions) up to an hour (lines, routes). OASA only accepts
 connections from Greece; Cloudflare runs the function in Athens for users there. It also handles
 `/oasa-web/*`, the News tab's requests to www.oasa.gr (`worker/oasaWebProxy.ts`), keeping answers in
-Cloudflare's cache and serving a saved copy when oasa.gr is down.
+Cloudflare's cache and serving a saved copy when oasa.gr is down, and `/ose/screens/{board}`, a Proastiakos
+station's live departures (`worker/oseProxy.ts`), cached for 30 s.
 
 - Workers Builds is connected to the GitHub repo: build command `npm run build`, deploy command
   `npx wrangler deploy` (Node version from `.node-version`). Every push to `main` deploys.
@@ -122,7 +128,7 @@ Or open `android/` in Android Studio and press Run.
 - [x] **P6a:** bottom tab bar on phones
 - [x] **P6b:** Metro tab: M1–M3 on a map with timetable-estimated train positions, next trains at each station
 - [x] **P6c:** Rail tab: the tram (T6, T7) next to the metro, with changes between them
-- [ ] **P6d:** metro stations on the Nearby map, metro disruptions from the News tab, the Proastiakos (no open data yet)
+- [x] **P6d:** rail stations on the Nearby map and list; OASA's metro and tram announcements on the Rail tab and station pages; the Proastiakos (A1–A4) from Hellenic Train's timetable PDFs, with live departures from OSE's station boards
 - [ ] **P7a:** more than one city: a data source per city behind one interface, a city picker in the header, Athens unchanged (default city, same URLs) and no visible change for its users
 - [ ] **P7b:** Heraklion beta through CityBus, the platform of ~24 Greek cities: stops, live arrivals marked live or scheduled with incoming buses on the stop map, lines, timetables, route maps; all calls through the Worker. Waiting on e-analysis (CityBus) for permission; see [CityBus notes](docs/architecture.md#citybus-notes-heraklion-p7b)
 
@@ -134,5 +140,8 @@ MIT. See [LICENSE](LICENSE).
 
 Bus data and announcements © OASA (each announcement links to the original on oasa.gr). Metro and
 tram timetables © STASY, published on [data.gov.gr](https://data.gov.gr/dataset/dromologia-statheron-sygkoinonion-metro-isap-tram)
-(the dataset states no licence; Greek public-sector open data is reusable under law 4727/2020). Metro
-and tram line shapes © OpenStreetMap contributors (ODbL). Map tiles by [OpenFreeMap](https://openfreemap.org), map data © OpenStreetMap contributors.
+(the dataset states no licence; Greek public-sector open data is reusable under law 4727/2020). Proastiakos
+timetables © Hellenic Train (converted from the PDFs on its site), live departures from OSE's station
+screens (ose.mpass.ltd, the boards Hellenic Train's [live page](https://www.hellenictrain.gr/eksypiretisi-epivaton/katastasi-kykloforias/live-plirofories-dromologion/)
+links to). Metro, tram and Proastiakos line shapes and Proastiakos station positions © OpenStreetMap
+contributors (ODbL). Map tiles by [OpenFreeMap](https://openfreemap.org), map data © OpenStreetMap contributors.

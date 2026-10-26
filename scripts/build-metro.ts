@@ -1,5 +1,7 @@
 // Builds public/data/metro.json: metro lines M1–M3, tram lines T6 and T7, their stations and every trip
-// in STASY's GTFS feed (from data.gov.gr), for the Rail tab's timetable-based train positions and departures.
+// in STASY's GTFS feed (from data.gov.gr), and the Proastiakos's lines A1–A4 from Hellenic Train's
+// timetable (scripts/proastiakos-timetable.json, converted from its PDFs by scripts/convert-proastiakos.ts),
+// for the Rail tab's timetable-based train positions and departures.
 // Runs nightly in .github/workflows/update-metro.yml; locally: `npm run build:metro`.
 // METRO_FEED=path/to/feed.zip uses a downloaded feed instead.
 // Uses only Node built-ins, so it runs without `npm install`.
@@ -8,6 +10,7 @@ import { inflateRawSync } from 'node:zlib'
 import { METRO_FILE_VERSION, type MetroFile } from '../src/domain/metroFile.ts'
 import type { LngLat } from '../src/domain/polyline.ts'
 import { toMetroFile, type GtfsFiles, type StationTable } from './metroData.ts'
+import { PROASTIAKOS_PAGE, timetablePdfs, type ProastiakosTimetable } from './proastiakosData.ts'
 
 /** data.gov.gr's dataset "Δρομολόγια Σταθερών Συγκοινωνιών (ΜΕΤΡΟ, ΗΣΑΠ, ΤΡΑΜ)" and its GTFS resource */
 const DATASET_API = 'https://data.gov.gr/api/3/action/package_show?id=4e897a75-975a-4ce7-af65-f32ea01f93b9'
@@ -16,6 +19,8 @@ const OUTPUT = new URL('../public/data/metro.json', import.meta.url)
 const SHAPES = new URL('./metro-shapes.json', import.meta.url)
 const STATIONS = new URL('./metro-stations.json', import.meta.url)
 const TRAM_STOPS = new URL('./tram-stops.json', import.meta.url)
+const PROASTIAKOS_STATIONS = new URL('./proastiakos-stations.json', import.meta.url)
+const PROASTIAKOS_TIMETABLE = new URL('./proastiakos-timetable.json', import.meta.url)
 const USER_AGENT = 'athens-bus-app metro builder (+https://github.com/deepblue597/athens-bus-app)'
 const TIMEOUT_MS = 120_000
 
@@ -34,7 +39,10 @@ async function main() {
   ) as unknown as GtfsFiles
 
   const shapes = JSON.parse(await readFile(SHAPES, 'utf8')) as Record<string, LngLat[][]>
-  const file = toMetroFile(gtfs, shapes, { metro: await readTable(STATIONS), tram: await readTable(TRAM_STOPS) })
+  const proastiakos = JSON.parse(await readFile(PROASTIAKOS_TIMETABLE, 'utf8')) as ProastiakosTimetable
+  const tables = { metro: await readTable(STATIONS), tram: await readTable(TRAM_STOPS), suburban: await readTable(PROASTIAKOS_STATIONS) }
+  const file = toMetroFile(gtfs, shapes, tables, proastiakos)
+  const newPdfs = await changedProastiakosPdfs(proastiakos.pdfs)
 
   // STASY sometimes uploads late: never replace a timetable with one that ends earlier
   const previous = await readPrevious()
@@ -58,6 +66,32 @@ async function main() {
   if (file.lastDate < today) {
     // The app falls back to the last published week, with a notice; fail so the job shows up red
     throw new Error(`STASY's timetable ended on ${file.lastDate} and no newer one is published`)
+  }
+  if (newPdfs) {
+    throw new Error(
+      `Hellenic Train's page links other timetable PDFs than the ones converted (${newPdfs.join(', ')}): ` +
+        'run `node scripts/convert-proastiakos.ts` and commit the result',
+    )
+  }
+}
+
+/**
+ * The PDFs Hellenic Train's page links to now, when they aren't the ones the committed timetable was
+ * converted from; null when they are, or when the page can't be read (that isn't worth a red job)
+ */
+async function changedProastiakosPdfs(converted: string[]): Promise<string[] | null> {
+  try {
+    const res = await fetch(PROASTIAKOS_PAGE, { headers: { 'User-Agent': USER_AGENT }, signal: AbortSignal.timeout(TIMEOUT_MS) })
+    if (!res.ok) {
+      console.log(`Couldn't check Hellenic Train's timetable page: HTTP ${res.status}`)
+      return null
+    }
+    const linked = timetablePdfs(await res.text())
+    const same = linked.length === converted.length && linked.every((pdf) => converted.includes(pdf))
+    return same ? null : linked
+  } catch (err) {
+    console.log(`Couldn't check Hellenic Train's timetable page: ${err instanceof Error ? err.message : err}`)
+    return null
   }
 }
 
