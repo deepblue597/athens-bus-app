@@ -1,18 +1,24 @@
-import { expectedTime, type BoardTrain } from '../../domain/stationBoard'
+import { expectedTime, isLongDistance, type BoardTrain } from '../../domain/stationBoard'
 import { RefreshTimer } from '../../shared/RefreshTimer'
 import { BOARD_REFRESH_MS, useStationBoard } from './useStationBoard'
 
 const timeFormat = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Athens' })
 const clockFormat = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Europe/Athens' })
 
-/** Trains still shown this long after they were due to leave, as "now" */
+/** Trains still shown this long after they were due to leave (or arrive), as "now" */
 const JUST_LEFT_MS = 60_000
 
-/** The live departures at a Proastiakos station, from OSE's station screens */
-export function LiveBoard({ board, now }: { board: number; now: number }) {
+/**
+ * The live departures and arrivals at a Proastiakos station, from OSE's station screens.
+ * `proastiakosNames` tells Proastiakos trains from long-distance ones, which the screens list too.
+ */
+export function LiveBoard({ board, now, proastiakosNames }: { board: number; now: number; proastiakosNames: readonly string[] }) {
   const { data, isPending, isPaused, isError, isFetching, dataUpdatedAt, refetch } = useStationBoard(board)
-  // Trains ending here only arrive; the board lists them too
-  const departures = (data?.trains ?? []).filter((t) => !t.terminates && expectedTime(t) >= now - JUST_LEFT_MS)
+  // A cancelled train stays on the list until its time, so nobody waits for it
+  const upcoming = (data?.trains ?? []).filter((t) => (t.cancelled ? t.scheduled : expectedTime(t)) >= now - JUST_LEFT_MS)
+  const departures = upcoming.filter((t) => !t.terminates)
+  // Trains ending here, for anyone meeting one
+  const arrivals = upcoming.filter((t) => t.terminates)
 
   return (
     <section className="live-board" aria-labelledby="live-board-heading">
@@ -43,7 +49,7 @@ export function LiveBoard({ board, now }: { board: number; now: number }) {
           </p>
         )}
         {isError && data && <p className="metro-message live-board-stale">Couldn’t refresh. Showing the last update.</p>}
-        {data && departures.length === 0 && <p className="metro-message">No departures on the board right now.</p>}
+        {data && departures.length === 0 && arrivals.length === 0 && <p className="metro-message">No trains on the board right now.</p>}
       </div>
 
       {data?.notices.map((notice) => (
@@ -55,22 +61,34 @@ export function LiveBoard({ board, now }: { board: number; now: number }) {
       {departures.length > 0 && (
         <ul className="metro-departures" aria-label="Live departures">
           {departures.map((t) => (
-            <LiveDeparture key={`${t.train}-${t.scheduled}`} train={t} now={now} />
+            <LiveTrain key={`${t.train}-${t.scheduled}`} train={t} now={now} longDistance={isLongDistance(t, proastiakosNames)} />
           ))}
         </ul>
+      )}
+
+      {arrivals.length > 0 && (
+        <>
+          <h3 className="live-arrivals-heading">Arriving</h3>
+          <ul className="metro-departures" aria-label="Live arrivals">
+            {arrivals.map((t) => (
+              <LiveTrain key={`${t.train}-${t.scheduled}`} train={t} now={now} longDistance={isLongDistance(t, proastiakosNames)} />
+            ))}
+          </ul>
+        </>
       )}
     </section>
   )
 }
 
-function LiveDeparture({ train, now }: { train: BoardTrain; now: number }) {
-  const expected = expectedTime(train)
-  const minutes = Math.round((expected - now) / 60_000)
-  const late = train.delayMinutes > 0
+/** A departure ("to …") or, for a train ending here, an arrival ("from …") */
+function LiveTrain({ train, now, longDistance }: { train: BoardTrain; now: number; longDistance: boolean }) {
+  const minutes = Math.round((expectedTime(train) - now) / 60_000)
+  const late = !train.cancelled && train.delayMinutes > 0
+  const [place, placeEn] = train.terminates ? [train.origin, train.originEn] : [train.destination, train.destinationEn]
   return (
-    <li className="metro-departure live-departure">
+    <li className={`metro-departure live-departure${train.cancelled ? ' live-cancelled' : ''}`}>
       <span className="metro-departure-time">
-        {timeFormat.format(train.scheduled)}
+        <span className="live-scheduled">{timeFormat.format(train.scheduled)}</span>
         {late && (
           <span className="live-delay">
             <span className="visually-hidden">, </span>+{train.delayMinutes} min<span className="visually-hidden"> late</span>
@@ -79,14 +97,30 @@ function LiveDeparture({ train, now }: { train: BoardTrain; now: number }) {
       </span>
       <span className="metro-departure-dest">
         <span className="live-destination">
-          to <span lang="el">{train.destination}</span>
+          {train.terminates ? 'from' : 'to'} <span lang="el">{place}</span>
         </span>
         <span className="live-train">
-          {train.destinationEn} · train {train.train}
+          {placeEn}
+          {longDistance && (
+            <>
+              {' · '}
+              <span className="live-long-distance">long-distance</span>
+            </>
+          )}
+          {' · '}train {train.train}
           {train.platform && ` · platform ${train.platform}`}
         </span>
+        {train.remark && (
+          <span className="live-remark" lang="el">
+            {train.remark}
+          </span>
+        )}
       </span>
-      <span className="metro-departure-in">{minutes <= 0 ? 'now' : minutes < 60 ? `${minutes} min` : ''}</span>
+      {train.cancelled ? (
+        <span className="live-cancelled-label">Cancelled</span>
+      ) : (
+        <span className="metro-departure-in">{minutes <= 0 ? 'now' : minutes < 60 ? `${minutes} min` : ''}</span>
+      )}
     </li>
   )
 }

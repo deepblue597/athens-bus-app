@@ -14,7 +14,7 @@ export interface RawBoardRoute {
   TRENO?: unknown
   /** Operator, "HELLENIC TRAIN" */
   RUP?: unknown
-  /** "Ρέντης - Αεροδρόμιο" */
+  /** "Ρέντης - Αεροδρόμιο", with remarks in capitals after it: "… (ΚΑΤΑΡΓΗΣΗ ΔΡΟΜΟΛΟΓΙΟΥ)" */
   FROMTO?: unknown
   /** "1", or "-" when not announced */
   DR_PLATFORM?: unknown
@@ -68,21 +68,41 @@ function toBoardTrain(raw: unknown): BoardTrain | null {
   if (!train || !time || Number.isNaN(around)) {
     return null
   }
-  const ends = endsOf(el.FROMTO)
-  const endsEn = endsOf(en.FROMTO)
+  const { route: fromTo, remark } = splitRemark(text(el.FROMTO))
+  const ends = endsOf(fromTo)
+  const endsEn = endsOf(splitRemark(text(en.FROMTO)).route)
+  const cancelled = remark !== null && CANCELLED.test(remark)
   const platform = text(el.DR_PLATFORM)
   const delay = Number.parseInt(text(el.PREVIOUSDELAY9), 10)
   return {
     train,
     operator: text(el.RUP),
     origin: ends[0],
+    originEn: titleCase(endsEn[0] || ends[0]),
     destination: ends[1],
     destinationEn: titleCase(endsEn[1] || ends[1]),
     platform: platform && platform !== '-' ? platform : null,
     scheduled: nearest(time, around),
     delayMinutes: Number.isFinite(delay) && delay > 0 ? delay : 0,
     terminates: departure === null,
+    cancelled,
+    remark: cancelled ? null : remark,
   }
+}
+
+/** A whole train cancelled. A partial cancellation ("ΜΕΡΙΚΗ ΚΑΤΑΡΓΗΣΗ") would stay a remark, as the screens word it */
+const CANCELLED = /^ΚΑΤΑΡΓΗΣΗ ΔΡΟΜΟΛΟΓΙΟΥ$/
+
+/**
+ * The screens add remarks to the route in capitals and parentheses:
+ * "Αθήνα - Θεσσαλονίκη Επιβατικός (ΚΑΤΑΡΓΗΣΗ ΔΡΟΜΟΛΟΓΙΟΥ)". A parenthesis in mixed case is part of a name.
+ */
+function splitRemark(fromTo: string): { route: string; remark: string | null } {
+  const match = /^(.*?)\s*\(([^()]+)\)$/u.exec(fromTo)
+  if (!match || match[2] !== match[2].toUpperCase() || !/\p{L}/u.test(match[2])) {
+    return { route: fromTo, remark: null }
+  }
+  return { route: match[1], remark: match[2].trim().replace(/\s+/g, ' ') }
 }
 
 function text(value: unknown): string {

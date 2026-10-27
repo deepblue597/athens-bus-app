@@ -4,8 +4,10 @@ import { expectedTime } from '../../domain/stationBoard'
 import { OseError, toStationBoard } from './boardAdapters'
 import neratziotissa from './__fixtures__/board-18-neratziotissa.json'
 import airport from './__fixtures__/board-28-aerodromio.json'
+import athina from './__fixtures__/board-1-athina.json'
 
-// Both boards were fetched at 00:27 on Tuesday 27 Oct 2026, Athens time
+// Neratziotissa's and the airport's boards were fetched at 00:27 on Tuesday 27 Oct 2026, Athens time;
+// Athens's at 10:49, with a cancelled train to Thessaloniki and one arriving from there
 const at = (h: number, m: number) => athensTimeToEpoch(2026, 10, 27, h, m)
 
 describe('toStationBoard', () => {
@@ -16,6 +18,7 @@ describe('toStationBoard', () => {
       train: '3200',
       operator: 'HELLENIC TRAIN',
       origin: 'Ρέντης',
+      originEn: 'Rentis',
       destination: 'Αεροδρόμιο',
       destinationEn: 'Airport',
       platform: '1',
@@ -23,6 +26,8 @@ describe('toStationBoard', () => {
       scheduled: at(4, 34),
       delayMinutes: 0,
       terminates: false,
+      cancelled: false,
+      remark: null,
     })
     expect(board.notices).toEqual([])
   })
@@ -38,6 +43,28 @@ describe('toStationBoard', () => {
     ])
     expect(board.trains[0].scheduled).toBe(at(4, 58))
     expect(board.trains[3].destinationEn).toBe('Piraeus Suburban')
+  })
+
+  it('reads long-distance trains, a cancellation and an arrival at Athens', () => {
+    const board = toStationBoard(athina)
+    expect(board.trains.map((t) => [t.train, t.destinationEn, t.terminates, t.cancelled, t.delayMinutes])).toEqual([
+      ['52', 'Thessaloniki Gare Centrale', false, true, 0],
+      ['1212', 'Airport', false, false, 0],
+      ['51', 'Athens', true, false, 9],
+      ['1213', 'Piraeus Suburban', false, false, 2],
+      ['1542', 'Chalkida', false, false, 0],
+    ])
+    // The cancellation is cut from the destination, in both languages
+    expect(board.trains[0]).toMatchObject({ destination: 'Θεσσαλονίκη Επιβατικός', remark: null, scheduled: at(10, 58) })
+    expect(board.trains[2]).toMatchObject({ origin: 'Θεσσαλονίκη Επιβατικός', originEn: 'Thessaloniki Gare Centrale', scheduled: at(11, 4) })
+  })
+
+  it('keeps a remark it doesn’t know, and a name’s own parenthesis', () => {
+    const route = structuredClone(neratziotissa.routes[0])
+    route.routesEl.FROMTO = 'Ρέντης - Αεροδρόμιο (ΜΕΡΙΚΗ ΚΑΤΑΡΓΗΣΗ)'
+    expect(toStationBoard({ routes: [route] }).trains[0]).toMatchObject({ destination: 'Αεροδρόμιο', cancelled: false, remark: 'ΜΕΡΙΚΗ ΚΑΤΑΡΓΗΣΗ' })
+    route.routesEl.FROMTO = 'Ρέντης - Αθήνα (Σταθμός Λαρίσης)'
+    expect(toStationBoard({ routes: [route] }).trains[0]).toMatchObject({ destination: 'Αθήνα (Σταθμός Λαρίσης)', remark: null })
   })
 
   it('adds the reported delay, reads notices and leaves out unannounced platforms', () => {
