@@ -33,6 +33,10 @@ export function MetroStationPage() {
   )
 
   const nearby = useMemo(() => (network && station ? changeNearby(network, station) : []), [network, station])
+  const proastiakosNames = useMemo(
+    () => (network ? network.stations.filter((s) => s.mode === 'suburban').map((s) => s.name) : []),
+    [network],
+  )
 
   const title = station?.name ?? 'Station'
 
@@ -67,7 +71,7 @@ export function MetroStationPage() {
             </p>
           </header>
 
-          {station.board !== null && <LiveBoard board={station.board} now={now} />}
+          {station.board !== null && <LiveBoard board={station.board} now={now} proastiakosNames={proastiakosNames} />}
 
           <RailNewsList network={network} station={station} now={now} />
 

@@ -466,6 +466,39 @@
   font-size: 0.8125rem;
 }
 
+.live-long-distance {
+  white-space: nowrap;
+}
+
+.live-remark {
+  display: block;
+  color: var(--color-warning-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+/* A cancelled train: its time struck out, and "Cancelled" where the countdown would be */
+.live-cancelled .live-scheduled {
+  text-decoration: line-through;
+  color: var(--color-text-muted);
+}
+
+.live-cancelled-label {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.live-arrivals-heading {
+  margin: 16px 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
 .metro-timetable-heading {
   margin: 24px 0 0;
   font-size: 1rem;

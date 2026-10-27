@@ -6,6 +6,7 @@ export interface BoardTrain {
   operator: string
   /** Where the train's journey starts and ends, in Greek and English ("Ρέντης", "Αεροδρόμιο") */
   origin: string
+  originEn: string
   destination: string
   destinationEn: string
   /** Platform, when announced */
@@ -16,6 +17,10 @@ export interface BoardTrain {
   delayMinutes: number
   /** The journey ends at this station: it only arrives */
   terminates: boolean
+  /** OSE has cancelled this train ("ΚΑΤΑΡΓΗΣΗ ΔΡΟΜΟΛΟΓΙΟΥ" on the screens) */
+  cancelled: boolean
+  /** Any other remark the screens add to the route, in Greek, e.g. a remark this app doesn't know yet */
+  remark: string | null
 }
 
 export interface StationBoard {
@@ -28,4 +33,31 @@ export interface StationBoard {
 /** When a train should now leave: its scheduled time plus the reported delay */
 export function expectedTime(train: BoardTrain): number {
   return train.scheduled + train.delayMinutes * 60_000
+}
+
+/**
+ * A train that starts or ends off the Proastiakos, e.g. Athens – Thessaloniki. The boards list these too.
+ * `proastiakosNames` are the Proastiakos stations' Greek names. OSE's names differ a little
+ * ("Ρέντης" for Ρέντη, "Αθήνα" for "Αθήνα (Σταθμός Λαρίσης)"), so a name matches when one starts with the other.
+ */
+export function isLongDistance(train: BoardTrain, proastiakosNames: readonly string[]): boolean {
+  const known = proastiakosNames.map(normalizeName)
+  const onProastiakos = (name: string) => {
+    const n = normalizeName(name)
+    // A name that can't be read isn't evidence of anything
+    return n === '' || known.some((k) => k.startsWith(n) || n.startsWith(k))
+  }
+  return !onProastiakos(train.origin) || !onProastiakos(train.destination)
+}
+
+/** "Αθήνα (Σταθμός Λαρίσης)" → "αθηνα": no accents, case or parentheses */
+function normalizeName(name: string): string {
+  return name
+    .replace(/\(.*?\)/g, '')
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/ς/g, 'σ')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
