@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -26,8 +27,22 @@ const oasaProxy = {
 
 const DAY_SECONDS = 24 * 60 * 60
 
+/** The commit the app was built from, sent with problem reports (Workers Builds sets the variable) */
+function buildId(): string {
+  const sha = process.env.WORKERS_CI_COMMIT_SHA
+  if (sha) {
+    return sha.slice(0, 7)
+  }
+  try {
+    return execSync('git rev-parse --short=7 HEAD', { encoding: 'utf8' }).trim()
+  } catch {
+    return 'dev'
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
+  define: { 'import.meta.env.VITE_APP_BUILD': JSON.stringify(buildId()) },
   plugins: [
     react(),
     // Installable app with an offline shell. The service worker doesn't touch /oasa or /ose: live data is
@@ -60,7 +75,7 @@ export default defineConfig(({ mode }) => ({
         globPatterns: ['**/*.{js,mjs,css,html,svg,png}'],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/oasa\//, /^\/oasa-web\//, /^\/ose\//, /^\/data\//],
+        navigateFallbackDenylist: [/^\/oasa\//, /^\/oasa-web\//, /^\/ose\//, /^\/data\//, /^\/api\//],
         runtimeCaching: [
           {
             // Rebuilt nightly: show the saved copy at once and fetch the new one in the background

@@ -111,6 +111,10 @@ export function AppPage() {
             <strong>Internet</strong>, to get live data from OASA and the map.
           </li>
           <li>No account, no ads and no tracking in the app. Favourites stay on your phone.</li>
+          <li>
+            <strong>Report a problem</strong> sends only what you write, the page you were on, the app version and your
+            Android version, and publishes it as an issue on GitHub. Nothing is sent unless you send a report.
+          </li>
         </ul>
       </section>
 

@@ -6,6 +6,7 @@ import { LinesPage } from '../features/line/LinesPage'
 import { LinePage } from '../features/line/LinePage'
 import { RoutePage } from '../features/route/RoutePage'
 import { AppPage } from '../features/download/AppPage'
+import { FeedbackPage } from '../features/feedback/FeedbackPage'
 import { NewsPage } from '../features/news/NewsPage'
 import { AnnouncementPage } from '../features/news/AnnouncementPage'
 import { MetroPage } from '../features/metro/MetroPage'
@@ -31,6 +32,8 @@ export const router = createBrowserRouter([
       { path: 'news', element: <NewsPage /> },
       { path: 'news/:id', element: <AnnouncementPage /> },
       { path: 'app', element: <AppPage /> },
+      // ?from= is the page the report is about
+      { path: 'feedback', element: <FeedbackPage /> },
     ],
   },
 ])

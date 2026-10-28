@@ -35,6 +35,42 @@
   outline-color: var(--color-on-brand);
 }
 
+/* On every page, so a problem can be reported from where it happened */
+.layout-feedback {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  margin-left: auto;
+  padding: 0 4px;
+  color: inherit;
+  font-size: 0.875rem;
+  text-decoration: none;
+  opacity: 0.9;
+}
+
+.layout-feedback:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.layout-feedback:focus-visible {
+  outline-color: var(--color-on-brand);
+  border-radius: 8px;
+}
+
+/* The smallest phones (or large text): the icon alone, still named for screen readers */
+@media (max-width: 359px) {
+  .layout-feedback-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
 .layout-nav {
   grid-area: nav;
   display: flex;
@@ -118,7 +154,7 @@
 
   .layout-header {
     min-height: 0;
-    padding: calc(4px + env(safe-area-inset-top)) 0 4px calc(16px + env(safe-area-inset-left));
+    padding: calc(4px + env(safe-area-inset-top)) 16px 4px calc(16px + env(safe-area-inset-left));
   }
 
   .layout-nav {

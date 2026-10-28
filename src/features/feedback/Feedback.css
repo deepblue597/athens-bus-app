@@ -1,0 +1,130 @@
+.feedback-page {
+  flex: 1;
+  overflow-y: auto;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+}
+
+.feedback-page h1 {
+  margin: 0 0 8px;
+  font-size: 1.5rem;
+  line-height: 1.2;
+}
+
+.feedback-intro,
+.feedback-hint {
+  color: var(--color-text-muted);
+}
+
+.feedback-intro {
+  margin: 0 0 20px;
+}
+
+.feedback-kinds {
+  margin: 0 0 20px;
+  padding: 0;
+  border: none;
+}
+
+.feedback-kinds legend,
+.feedback-label {
+  display: block;
+  margin: 0 0 4px;
+  padding: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.feedback-kinds label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+}
+
+.feedback-kinds input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--color-brand);
+}
+
+.feedback-hint {
+  margin: 0 0 8px;
+  font-size: 0.875rem;
+}
+
+.feedback-page textarea {
+  display: block;
+  width: 100%;
+  min-height: 8rem;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  resize: vertical;
+}
+
+.feedback-count {
+  margin-top: 4px;
+  text-align: right;
+}
+
+.feedback-page h2.feedback-label {
+  margin-top: 20px;
+}
+
+.feedback-details {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2px 16px;
+  margin: 0 0 20px;
+  font-size: 0.875rem;
+}
+
+.feedback-details dt {
+  color: var(--color-text-muted);
+}
+
+.feedback-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.feedback-error {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.feedback-submit {
+  min-height: 48px;
+  padding: 10px 24px;
+  border: none;
+  border-radius: 999px;
+  background: var(--color-brand);
+  color: var(--color-on-brand);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.feedback-submit:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.feedback-submit + .feedback-hint {
+  margin-top: 8px;
+}
+
+.feedback-github {
+  margin-top: 32px;
+}
