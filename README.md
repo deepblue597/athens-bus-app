@@ -62,12 +62,18 @@ answers for a few seconds (arrivals, bus positions) up to an hour (lines, routes
 connections from Greece; Cloudflare runs the function in Athens for users there. It also handles
 `/oasa-web/*`, the News tab's requests to www.oasa.gr (`worker/oasaWebProxy.ts`), keeping answers in
 Cloudflare's cache and serving a saved copy when oasa.gr is down, and `/ose/screens/{board}`, a Proastiakos
-station's live departures (`worker/oseProxy.ts`), cached for 30 s.
+station's live departures (`worker/oseProxy.ts`), cached for 30 s. Finally it takes reports from the
+"Report a problem" page at `/api/feedback` and opens them as GitHub issues labelled `feedback`
+(`worker/feedback.ts`).
 
 - Workers Builds is connected to the GitHub repo: build command `npm run build`, deploy command
   `npx wrangler deploy` (Node version from `.node-version`). Every push to `main` deploys.
 - `public/_headers` caches the hashed files in `/assets/` for a year.
 - Try the production setup locally: `npm run build && npx wrangler dev`.
+- Problem reports need a GitHub token as a Worker secret: a fine-grained token for this repo only, with
+  **Issues: read and write**, saved with `npx wrangler secret put GITHUB_TOKEN`. Without it the page
+  says the report couldn't be sent. Each address may send 3 reports a minute (`ratelimits` in
+  `wrangler.jsonc`).
 
 ## Android app
 
@@ -130,6 +136,7 @@ Or open `android/` in Android Studio and press Run.
 - [x] **P6c:** Rail tab: the tram (T6, T7) next to the metro, with changes between them
 - [x] **P6d:** rail stations on the Nearby map and list; OASA's metro and tram announcements on the Rail tab and station pages; the Proastiakos (A1–A4) from Hellenic Train's timetable PDFs, with live departures from OSE's station boards
 - [x] **P6e:** live boards show cancelled trains as cancelled, tag long-distance trains (e.g. Athens – Thessaloniki) and list trains arriving
+- [x] **P6f:** "Report a problem" on every page, sent as a public GitHub issue with the page, app version and browser
 - [ ] **P7a:** more than one city: a data source per city behind one interface, a city picker in the header, Athens unchanged (default city, same URLs) and no visible change for its users
 - [ ] **P7b:** Heraklion beta through CityBus, the platform of ~24 Greek cities: stops, live arrivals marked live or scheduled with incoming buses on the stop map, lines, timetables, route maps; all calls through the Worker. Waiting on e-analysis (CityBus) for permission; see [CityBus notes](docs/architecture.md#citybus-notes-heraklion-p7b)
 
