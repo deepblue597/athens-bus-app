@@ -6,6 +6,7 @@ import { nextDepartures, oneWayTowards } from '../../domain/trainPositions'
 import { useNow } from '../../shared/useNow'
 import { LiveBoard } from './LiveBoard'
 import { MetroCredit, MetroLineBadge, TimetableNotice } from './MetroParts'
+import { timetablePath } from './timetablePath'
 import { RailNewsList } from './RailNews'
 import { useMetroNetwork } from './useMetroNetwork'
 import './Metro.css'
@@ -92,7 +93,10 @@ export function MetroStationPage() {
           })}
 
           {groups.length === 0 && (
-            <p className="metro-message">No {station.mode === 'tram' ? 'trams' : 'trains'} are scheduled from here.</p>
+            <p className="metro-message">
+              No {station.mode === 'tram' ? 'trams' : 'trains'} are scheduled from here.{' '}
+              <Link to={timetablePath(network, station)}>See the full timetable</Link>
+            </p>
           )}
 
           {groups.map((group) => {
@@ -120,6 +124,10 @@ export function MetroStationPage() {
                     </li>
                   ))}
                 </ul>
+                <Link to={timetablePath(network, station, group)} className="metro-tt-link">
+                  Full timetable <span aria-hidden="true">›</span>
+                  <span className="visually-hidden"> towards {towards.name}</span>
+                </Link>
               </section>
             )
           })}

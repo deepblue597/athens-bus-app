@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { fromMetroFile } from '../data/metroFile'
 import type { MetroFile } from './metroFile'
-import { addDays, estimateTrains, nextDepartures, oneWayTowards, planFor, serviceDayStart, timetableNotice } from './trainPositions'
+import { addDays, dayTimetable, estimateTrains, nextDepartures, oneWayTowards, planFor, serviceDayStart, timetableNotice } from './trainPositions'
 import { athensTimeToEpoch } from './time'
 
 // One straight line of three stations, A (0 m) – B (~877 m) – C (~1,754 m), and two days of trips:
@@ -153,6 +153,35 @@ describe('nextDepartures', () => {
     const first = (now: number) => nextDepartures(network, 1, now).find((g) => g.towards === 2)?.departures[0]?.time
     expect(first(leaves + 20_000)).toBe(leaves)
     expect(first(leaves + 40_000)).not.toBe(leaves)
+  })
+})
+
+describe('dayTimetable', () => {
+  const times = (date: string, station: number, towards: number) =>
+    dayTimetable(network, station, date).groups.find((g) => g.towards === towards)?.departures.map((d) => d.time) ?? []
+
+  it('lists every train of the day per direction', () => {
+    const day = dayTimetable(network, 1, '2026-10-21')
+    expect(day.standIn).toBeNull()
+    expect(day.groups.map((g) => g.towards)).toEqual([0, 2])
+    expect(times('2026-10-21', 1, 2)).toEqual([at('2026-10-21', 8, 2, 30)])
+    expect(times('2026-10-21', 1, 0)).toEqual([at('2026-10-21', 8, 12, 30)])
+  })
+
+  it('puts a train after midnight on the date it runs, not its service day', () => {
+    // Thursday's 24:20 trip leaves B at 00:22:30 on Friday
+    expect(times('2026-10-22', 1, 0)).toEqual([])
+    expect(times('2026-10-23', 1, 0)).toEqual([at('2026-10-23', 0, 22, 30)])
+  })
+
+  it('has nothing from the end of a trip', () => {
+    expect(dayTimetable(network, 2, '2026-10-21').groups.map((g) => g.towards)).toEqual([0])
+  })
+
+  it('names the stand-in day after the timetable ends', () => {
+    const day = dayTimetable(network, 1, '2026-10-28')
+    expect(day.standIn).toBe('2026-10-21')
+    expect(times('2026-10-28', 1, 2)).toEqual([at('2026-10-28', 8, 2, 30)])
   })
 })
 

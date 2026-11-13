@@ -18,13 +18,15 @@ const formatDate = (date: string, format = dateFormat) => format.format(new Date
 /** Shown when today is outside the dates STASY published, so another day's timetable stands in */
 export function TimetableNotice({ network, now }: { network: MetroNetwork; now: number }) {
   const notice = timetableNotice(network, now)
-  if (!notice) {
-    return null
-  }
+  return notice ? <StandInNotice network={network} standIn={notice.standIn} /> : null
+}
+
+/** Says another day's timetable stands in for a date STASY's published timetable doesn't cover */
+export function StandInNotice({ network, standIn }: { network: MetroNetwork; standIn: string }) {
   return (
     <p className="metro-notice">
-      STASY’s published timetable covers {formatDate(notice.firstDate)} – {formatDate(notice.lastDate)}. Times
-      shown follow {formatDate(notice.standIn, weekdayFormat)}’s and may be off, especially on holidays.
+      STASY’s published timetable covers {formatDate(network.firstDate)} – {formatDate(network.lastDate)}. Times
+      shown follow {formatDate(standIn, weekdayFormat)}’s and may be off, especially on holidays.
     </p>
   )
 }
