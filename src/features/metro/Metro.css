@@ -559,3 +559,121 @@
   line-height: 1.35;
   overflow-wrap: anywhere;
 }
+
+/* Full timetable: a station's whole day, in rows per hour */
+.metro-tt-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  color: var(--color-brand-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.metro-tt-link:hover {
+  text-decoration: underline;
+}
+
+.metro-tt-controls {
+  margin-top: 12px;
+}
+
+.metro-tt-controls .segmented {
+  margin: 0;
+}
+
+.metro-tt-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0 8px;
+  font-size: 1rem;
+}
+
+.metro-tt-summary {
+  margin: 8px 0;
+  color: var(--color-text-muted);
+}
+
+.metro-tt-summary strong {
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.metro-tt-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0 0 8px;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+}
+
+.metro-tt-mark {
+  margin-left: 1px;
+  color: var(--color-brand-text);
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+.metro-tt-earlier {
+  margin-bottom: 8px;
+  font-size: 0.875rem;
+}
+
+.metro-tt,
+.metro-tt-times {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.metro-tt-hour {
+  display: grid;
+  grid-template-columns: 2.25em 1fr;
+  align-items: start;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.metro-tt-hour-label {
+  padding: 5px 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.metro-tt-times {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+  gap: 4px;
+}
+
+.metro-tt-time {
+  padding: 5px 0;
+  border-radius: 6px;
+  background: var(--color-hover);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.metro-tt-time--past {
+  background: none;
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--color-border-strong);
+}
+
+.metro-tt-time--next {
+  background: var(--color-brand);
+  color: var(--color-on-brand);
+  font-weight: 700;
+}
+
+.metro-tt-time--next .metro-tt-mark {
+  color: inherit;
+}

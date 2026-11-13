@@ -129,36 +129,95 @@ export function nextDepartures(network: MetroNetwork, station: number, nowMs: nu
   const groups = new Map<string, DepartureGroup>()
   // Tomorrow too, so late at night the first trains of the morning show
   for (const date of serviceDays(nowMs, [1])) {
-    const choice = planFor(network, date)
-    if (!choice) {
-      continue
-    }
-    const dayStart = serviceDayStart(date)
-    const plan = network.plans[choice.plan]
-    for (let i = 0; i < plan.length; i += 2) {
-      const pattern = network.patterns[plan[i]]
-      const k = pattern.stations.indexOf(station)
-      // Trains end their trip at the last station: nothing departs from there
-      if (k < 0 || k === pattern.stations.length - 1) {
-        continue
+    for (const { towards, departure } of serviceDayDepartures(network, station, date)?.departures ?? []) {
+      if (departure.time >= nowMs - JUST_LEFT_MS) {
+        addToGroup(groups, departure, towards)
       }
-      const time = dayStart + (plan[i + 1] + pattern.times[2 * k + 1]) * 1000
-      if (time < nowMs - JUST_LEFT_MS) {
-        continue
-      }
-      // Grouped by the end of the line trains head for: a tram line's two directions run on two tracks
-      const groupKey = `${pattern.line}:${pattern.towards}`
-      let group = groups.get(groupKey)
-      if (!group) {
-        group = { line: pattern.line, towards: pattern.towards, departures: [] }
-        groups.set(groupKey, group)
-      }
-      const departure: Departure = { key: `${date}:${i / 2}`, line: pattern.line, destination: pattern.stations[pattern.stations.length - 1], time }
-      group.departures.push(departure)
     }
   }
+  return sortGroups(groups).map((g) => ({ ...g, departures: g.departures.slice(0, perGroup) }))
+}
+
+export interface DayTimetable {
+  /** Every train per line and direction, earliest first */
+  groups: DepartureGroup[]
+  /** Set when the timetable doesn't cover the date: the date whose timetable stands in for it */
+  standIn: string | null
+}
+
+/**
+ * Every train leaving a station on an Athens calendar date, 00:00 to 23:59, per line and direction.
+ * Service days overlap (Saturday-night trains run past dawn on Sunday), so the trains after midnight
+ * of the day before are included and the date's own after midnight are left for the next date.
+ */
+export function dayTimetable(network: MetroNetwork, station: number, date: string): DayTimetable {
+  const groups = new Map<string, DepartureGroup>()
+  let standIn: string | null = null
+  for (const serviceDate of [addDays(date, -1), date]) {
+    const day = serviceDayDepartures(network, station, serviceDate)
+    if (!day) {
+      continue
+    }
+    // The date's own timetable is the one to name: the night before only adds its last trains
+    if (serviceDate === date) {
+      standIn = day.standIn
+    }
+    for (const { towards, departure } of day.departures) {
+      if (athensDate(departure.time) === date) {
+        addToGroup(groups, departure, towards)
+      }
+    }
+  }
+  return { groups: sortGroups(groups), standIn }
+}
+
+/** Every departure from a station in one service day, with the end of the line each heads for */
+function serviceDayDepartures(
+  network: MetroNetwork,
+  station: number,
+  date: string,
+): { standIn: string | null; departures: { towards: number; departure: Departure }[] } | null {
+  const choice = planFor(network, date)
+  if (!choice) {
+    return null
+  }
+  const dayStart = serviceDayStart(date)
+  const plan = network.plans[choice.plan]
+  const departures: { towards: number; departure: Departure }[] = []
+  for (let i = 0; i < plan.length; i += 2) {
+    const pattern = network.patterns[plan[i]]
+    const k = pattern.stations.indexOf(station)
+    // Trains end their trip at the last station: nothing departs from there
+    if (k < 0 || k === pattern.stations.length - 1) {
+      continue
+    }
+    departures.push({
+      towards: pattern.towards,
+      departure: {
+        key: `${date}:${i / 2}`,
+        line: pattern.line,
+        destination: pattern.stations[pattern.stations.length - 1],
+        time: dayStart + (plan[i + 1] + pattern.times[2 * k + 1]) * 1000,
+      },
+    })
+  }
+  return { standIn: choice.standIn, departures }
+}
+
+/** Grouped by the end of the line trains head for: a tram line's two directions run on two tracks */
+function addToGroup(groups: Map<string, DepartureGroup>, departure: Departure, towards: number) {
+  const groupKey = `${departure.line}:${towards}`
+  let group = groups.get(groupKey)
+  if (!group) {
+    group = { line: departure.line, towards, departures: [] }
+    groups.set(groupKey, group)
+  }
+  group.departures.push(departure)
+}
+
+function sortGroups(groups: Map<string, DepartureGroup>): DepartureGroup[] {
   return [...groups.values()]
-    .map((g) => ({ ...g, departures: g.departures.sort((a, b) => a.time - b.time).slice(0, perGroup) }))
+    .map((g) => ({ ...g, departures: g.departures.sort((a, b) => a.time - b.time) }))
     .sort((a, b) => a.line - b.line || a.towards - b.towards)
 }
 

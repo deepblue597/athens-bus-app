@@ -11,6 +11,7 @@ import { NewsPage } from '../features/news/NewsPage'
 import { AnnouncementPage } from '../features/news/AnnouncementPage'
 import { MetroPage } from '../features/metro/MetroPage'
 import { MetroStationPage } from '../features/metro/MetroStationPage'
+import { MetroTimetablePage } from '../features/metro/MetroTimetablePage'
 import { OldStationLink } from '../features/metro/OldStationLink'
 
 // The URL holds what is on screen, so links can be shared and the back button works
@@ -26,6 +27,8 @@ export const router = createBrowserRouter([
       { path: 'route/:routeCode', element: <RoutePage /> },
       { path: 'rail', element: <MetroPage /> },
       { path: 'rail/station/:stationId', element: <MetroStationPage /> },
+      // ?day=, ?dir= and ?to= pick the day, direction and where the trains end
+      { path: 'rail/station/:stationId/timetable', element: <MetroTimetablePage /> },
       // The tab was "Metro" before the tram joined it: old links and bookmarks still work
       { path: 'metro', element: <Navigate to="/rail" replace /> },
       { path: 'metro/station/:stationId', element: <OldStationLink /> },

@@ -137,6 +137,7 @@ Or open `android/` in Android Studio and press Run.
 - [x] **P6d:** rail stations on the Nearby map and list; OASA's metro and tram announcements on the Rail tab and station pages; the Proastiakos (A1–A4) from Hellenic Train's timetable PDFs, with live departures from OSE's station boards
 - [x] **P6e:** live boards show cancelled trains as cancelled, tag long-distance trains (e.g. Athens – Thessaloniki) and list trains arriving
 - [x] **P6f:** "Report a problem" on every page, sent as a public GitHub issue with the page, app version and browser
+- [x] **P6g:** full rail timetables: every departure from a station for the next seven days, per direction, with M3 trains to the airport picked out
 - [ ] **P7a:** more than one city: a data source per city behind one interface, a city picker in the header, Athens unchanged (default city, same URLs) and no visible change for its users
 - [ ] **P7b:** Heraklion beta through CityBus, the platform of ~24 Greek cities: stops, live arrivals marked live or scheduled with incoming buses on the stop map, lines, timetables, route maps; all calls through the Worker. Waiting on e-analysis (CityBus) for permission; see [CityBus notes](docs/architecture.md#citybus-notes-heraklion-p7b)
 

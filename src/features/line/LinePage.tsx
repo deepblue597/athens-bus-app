@@ -1,8 +1,9 @@
-import { useId, useState } from 'react'
+import { useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
 import { timetableSides, type Line } from '../../domain/line'
 import type { StopRoute } from '../../domain/types'
 import { nextDepartureIndex } from '../../domain/time'
+import { Segmented } from '../../shared/Segmented'
 import type { RoutePageState } from '../route/RoutePage'
 import { TODAY, useAthensMinutes, useLineDirections, useLines, useScheduleDays, useTimetable } from './useLineData'
 import './LinePage.css'
@@ -220,37 +221,6 @@ function BackLink({ to }: { to: string }) {
     <Link to={to} className="line-back">
       <span aria-hidden="true">←</span> Lines
     </Link>
-  )
-}
-
-interface SegmentedProps {
-  label: string
-  value: string
-  options: { value: string; label: string }[]
-  onChange: (value: string) => void
-}
-
-/** A row of pill-shaped radio buttons: one choice, arrow keys move between options */
-function Segmented({ label, value, options, onChange }: SegmentedProps) {
-  const name = useId()
-  return (
-    <fieldset className="segmented">
-      <legend className="visually-hidden">{label}</legend>
-      <div className="segmented-options">
-        {options.map((o) => (
-          <label key={o.value}>
-            <input
-              type="radio"
-              name={name}
-              value={o.value}
-              checked={value === o.value}
-              onChange={() => onChange(o.value)}
-            />
-            <span>{o.label}</span>
-          </label>
-        ))}
-      </div>
-    </fieldset>
   )
 }
 
